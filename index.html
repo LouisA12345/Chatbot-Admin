@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chatbot Admin Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080810;--surface:#0f0f1a;--surface2:#161625;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.12);
+  --text:#e8e8f4;--muted:rgba(255,255,255,.38);
+  --accent:#667eea;--accent2:#764ba2;
+  --green:#4ade80;--red:#f87171;--amber:#fbbf24;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
+
+/* ── Login ── */
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 60% 40%,#1a1a3e,var(--bg) 65%)}
+.login-card{width:400px;background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:40px;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.5);animation:fade-up .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes fade-up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.login-logo{font-size:40px;margin-bottom:16px}.login-title{font-size:22px;font-weight:500;margin-bottom:6px}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:28px}
+.login-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px 16px;color:var(--text);font-size:14px;font-family:'DM Mono',monospace;outline:none;margin-bottom:14px;transition:border-color .2s}
+.login-input:focus{border-color:var(--accent)}.login-input::placeholder{color:var(--muted)}
+.btn-primary{width:100%;padding:13px;border:none;border-radius:12px;cursor:pointer;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;box-shadow:0 4px 20px rgba(102,126,234,.35);transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+.btn-primary:hover{transform:translateY(-1px)}
+.login-error{color:var(--red);font-size:13px;margin-top:10px;display:none}
+
+/* ── App shell ── */
+#app{display:none;min-height:100vh;flex-direction:column}
+#app.visible{display:flex}
+.topbar{height:58px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:16px;flex-shrink:0}
+.topbar-badge{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;letter-spacing:.04em}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.status-dot{width:8px;height:8px;background:var(--green);border-radius:50%;animation:pulse-g 2s infinite}
+@keyframes pulse-g{0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,.4)}50%{box-shadow:0 0 0 5px rgba(74,222,128,0)}}
+.status-text{font-size:12px;color:var(--muted)}
+.btn-logout{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:6px 14px;color:var(--muted);font-size:12px;cursor:pointer;transition:color .15s,background .15s}
+.btn-logout:hover{color:var(--text);background:rgba(255,255,255,.1)}
+.layout{display:flex;flex:1;overflow:hidden}
+
+/* ── Sidebar ── */
+.sidebar{width:260px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-header{padding:20px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.sidebar-label{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.btn-new{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:8px;color:#fff;font-size:12px;padding:5px 12px;cursor:pointer;font-weight:500;transition:transform .2s}
+.btn-new:hover{transform:scale(1.05)}
+.site-list{flex:1;overflow-y:auto;padding:10px}
+.site-item{padding:11px 14px;border-radius:10px;cursor:pointer;margin-bottom:4px;display:flex;align-items:center;gap:10px;transition:background .15s;border:1px solid transparent}
+.site-item:hover{background:var(--surface2)}.site-item.active{background:var(--surface2);border-color:var(--border2)}
+.site-color-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.site-name{font-size:13.5px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.site-meta{font-size:11px;color:var(--muted)}
+.site-badges{display:flex;gap:4px;flex-shrink:0}
+.badge{font-size:10px;padding:2px 6px;border-radius:6px;font-weight:500}
+.badge.kb{background:rgba(74,222,128,.15);color:var(--green)}
+.badge.db{background:rgba(102,126,234,.15);color:var(--accent)}
+.badge.none{background:rgba(251,191,36,.12);color:var(--amber)}
+
+/* ── Main ── */
+.main{flex:1;overflow-y:auto;padding:28px}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:400px;gap:12px;color:var(--muted)}
+.panel{display:none;animation:fade-up .3s ease}.panel.active{display:block}
+.panel-header{display:flex;align-items:center;gap:14px;margin-bottom:28px}
+.panel-avatar{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center}
+.panel-title{font-size:20px;font-weight:500}.panel-sub{font-size:13px;color:var(--muted);margin-top:2px}
+.btn-danger{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);border-radius:8px;color:var(--red);font-size:12px;padding:6px 14px;cursor:pointer;margin-left:auto;transition:background .15s}
+.btn-danger:hover{background:rgba(248,113,113,.2)}
+
+/* ── Cards ── */
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px}
+.card.full{grid-column:1/-1}
+.card-title{font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.card-title-dot{width:6px;height:6px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));flex-shrink:0}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:20px}
+.tab{flex:1;padding:8px;border:none;border-radius:7px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--muted);background:transparent;transition:background .15s,color .15s}
+.tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+
+/* ── DB items ── */
+.db-type-row{display:flex;gap:8px;margin-bottom:16px}
+.db-type-btn{flex:1;padding:10px;border:1px solid var(--border2);border-radius:10px;background:var(--surface2);color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all .15s;text-align:center}
+.db-type-btn.active{border-color:var(--accent);background:rgba(102,126,234,.1);color:var(--text)}
+.db-item{background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
+.db-item-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;box-shadow:0 0 6px rgba(74,222,128,.5)}
+.db-item-info{flex:1;min-width:0}
+.db-item-label{font-size:13.5px;font-weight:500}
+.db-item-meta{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.db-item-actions{display:flex;gap:6px;flex-shrink:0}
+.btn-icon{background:rgba(255,255,255,.06);border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-size:11px;padding:5px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s,color .15s;white-space:nowrap}
+.btn-icon:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.btn-icon.danger:hover{background:rgba(248,113,113,.15);color:var(--red);border-color:rgba(248,113,113,.3)}
+
+/* ── Form elements ── */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500}
+.field input,.field textarea,.field select{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;color:var(--text);font-size:13.5px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent)}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted)}
+.field textarea{resize:vertical;min-height:72px}
+.field select{cursor:pointer}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.color-row{display:flex;gap:8px;align-items:center}
+.color-row input[type=color]{width:42px;height:42px;border-radius:10px;border:1px solid var(--border2);background:var(--surface2);cursor:pointer;padding:3px;flex-shrink:0}
+.color-row input[type=text]{flex:1}
+
+/* ── Sliders ── */
+.slider-field{margin-bottom:16px}
+.slider-field label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:500}
+.slider-field label span{color:var(--text);font-family:'DM Mono',monospace;font-size:11px}
+.slider-wrap{position:relative;height:6px;background:var(--surface2);border-radius:4px;border:1px solid var(--border2)}
+.slider-wrap input[type=range]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0}
+.slider-track{position:absolute;left:0;top:0;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));pointer-events:none;transition:width .1s}
+
+/* ── Toggle switch ── */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.toggle-row:last-child{border-bottom:none}
+.toggle-label{font-size:13px}
+.toggle-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.toggle{position:relative;width:38px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;border-radius:22px;background:var(--surface2);border:1px solid var(--border2);cursor:pointer;transition:background .2s,border-color .2s}
+.toggle input:checked + .toggle-track{background:var(--accent);border-color:var(--accent)}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3);transition:transform .2s}
+.toggle input:checked ~ .toggle-thumb{transform:translateX(16px)}
+
+/* ── Icon picker ── */
+.icon-type-row{display:flex;gap:8px;margin-bottom:16px}
+.icon-type-btn{flex:1;padding:12px 8px;border:1px solid var(--border2);border-radius:10px;background:var(--surface2);color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;transition:all .15s;text-align:center}
+.icon-type-btn.active{border-color:var(--accent);background:rgba(102,126,234,.1);color:var(--text)}
+.icon-preview-wrap{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;border:2px solid rgba(255,255,255,.12)}
+
+/* ── Buttons ── */
+.btn-save{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:10px;color:#fff;font-size:13.5px;font-weight:500;padding:11px 24px;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 4px 16px rgba(102,126,234,.3);transition:transform .2s,opacity .2s}
+.btn-save:hover{transform:translateY(-1px)}.btn-save:disabled{opacity:.5;transform:none;cursor:default}
+.btn-secondary{background:rgba(255,255,255,.06);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-size:13.5px;padding:10px 20px;cursor:pointer;transition:background .15s}
+.btn-secondary:hover{background:rgba(255,255,255,.1)}
+.btn-row{display:flex;gap:10px;align-items:center;margin-top:4px;flex-wrap:wrap}
+
+/* ── Upload ── */
+.upload-zone{border:2px dashed var(--border2);border-radius:14px;padding:28px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(102,126,234,.05)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.upload-icon{font-size:28px;margin-bottom:8px}.upload-text{font-size:14px;margin-bottom:4px}
+.upload-hint{font-size:12px;color:var(--muted)}
+.progress-bar{height:4px;background:var(--surface2);border-radius:4px;margin-top:14px;overflow:hidden;display:none}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;width:0;transition:width .4s}
+
+/* ── Chunk manager ── */
+.chunk-search{display:flex;gap:10px;margin-bottom:16px}
+.chunk-search input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:9px 14px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s}
+.chunk-search input:focus{border-color:var(--accent)}
+.chunk-list{display:flex;flex-direction:column;gap:6px;max-height:500px;overflow-y:auto}
+.chunk-item{background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;display:flex;align-items:flex-start;gap:12px;transition:border-color .2s}
+.chunk-item:hover{border-color:var(--border2)}
+.chunk-index{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);padding:2px 6px;background:rgba(255,255,255,.05);border-radius:4px;flex-shrink:0;margin-top:2px}
+.chunk-text{flex:1;font-size:12.5px;line-height:1.5;color:var(--text);word-break:break-word}
+.chunk-text.editing{outline:none;border:1px solid var(--accent);border-radius:6px;padding:4px 6px;background:rgba(102,126,234,.06)}
+.chunk-actions{display:flex;gap:5px;flex-shrink:0}
+.chunk-pagination{display:flex;align-items:center;justify-content:space-between;margin-top:14px;font-size:12px;color:var(--muted)}
+
+/* ── Preview ── */
+.preview-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+.preview-header{border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px}
+.preview-name{font-size:13px;font-weight:500}.preview-status{font-size:10px;margin-top:2px}
+.preview-bubble-user{border-radius:12px;padding:7px 11px;font-size:12px;color:#fff;display:inline-block}
+.preview-bubble-bot{border-radius:12px;padding:7px 11px;font-size:12px;color:#e2e2f0;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.06);display:inline-block}
+
+/* ── Stats ── */
+.stat{text-align:center}
+.stat-value{font-size:28px;font-weight:500;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* ── Code ── */
+.code-block{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-family:'DM Mono',monospace;font-size:11.5px;color:#a5b4fc;line-height:1.6;word-break:break-all;position:relative}
+.copy-btn{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:11px;padding:4px 10px;cursor:pointer;transition:background .15s,color .15s}
+.copy-btn:hover{background:rgba(255,255,255,.13);color:var(--text)}
+
+/* ── Info box ── */
+.info-box{background:rgba(102,126,234,.07);border:1px solid rgba(102,126,234,.2);border-radius:10px;padding:12px 14px;font-size:12.5px;color:rgba(255,255,255,.7);margin-bottom:14px;line-height:1.6}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px 20px;font-size:13.5px;box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:9999;transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+#toast.success{border-color:rgba(74,222,128,.3)}.toast.error{border-color:rgba(248,113,113,.3)}
+
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:999;display:none;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:32px;width:420px;animation:fade-up .3s cubic-bezier(.34,1.56,.64,1)}
+.modal-title{font-size:18px;font-weight:500;margin-bottom:20px}
+.modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+.btn-cancel{background:var(--surface2);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-size:13.5px;padding:10px 18px;cursor:pointer;transition:background .15s}
+.btn-cancel:hover{background:rgba(255,255,255,.08)}
+</style>
+</head>
+<body>
+
+<!-- Login screen shown before the admin key is validated -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">🤖</div>
+    <div class="login-title">Admin Portal</div>
+    <div class="login-sub">Enter your admin key to continue</div>
+    <input class="login-input" type="password" id="admin-key-input" placeholder="Admin API key">
+    <button class="btn-primary" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-error">Invalid admin key. Please try again.</div>
+  </div>
+</div>
+
+<!-- Main admin application shell -->
+<div id="app">
+  <div class="topbar">
+    <span style="font-size:20px">🤖</span>
+    <span style="font-size:15px;font-weight:500">Chatbot Admin</span>
+    <span class="topbar-badge">PORTAL</span>
+    <div class="topbar-right">
+      <div class="status-dot"></div>
+      <span class="status-text">Server online</span>
+      <button class="btn-logout" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+  <div class="layout">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-label">Sites</span>
+        <button class="btn-new" onclick="showNewSiteModal()">+ New</button>
+      </div>
+      <div class="site-list" id="site-list"><div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Loading...</div></div>
+    </div>
+
+    <div class="main">
+      <div id="empty-panel" class="empty-state">
+        <div style="font-size:48px;opacity:.5">👈</div>
+        <div style="font-size:15px">Select a site to manage it</div>
+        <div style="font-size:13px;color:var(--muted)">or create a new one</div>
+      </div>
+
+      <div id="site-panel" class="panel">
+        <div class="panel-header">
+          <div class="panel-avatar" id="panel-avatar-bg">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="8" width="18" height="13" rx="3" fill="white" opacity=".9"/>
+              <rect x="7" y="11" width="3" height="3" rx="1.5" fill="#667eea"/>
+              <rect x="14" y="11" width="3" height="3" rx="1.5" fill="#667eea"/>
+              <rect x="9" y="15" width="6" height="2" rx="1" fill="#667eea"/>
+              <rect x="10" y="3" width="4" height="5" rx="1" fill="white" opacity=".9"/>
+            </svg>
+          </div>
+          <div>
+            <div class="panel-title" id="panel-title">Site</div>
+            <div class="panel-sub" id="panel-sub">site_id</div>
+          </div>
+          <button class="btn-danger" id="delete-btn">Delete site</button>
+        </div>
+
+        <div class="tabs">
+          <button class="tab active" onclick="switchTab('knowledge',this)">📚 Knowledge</button>
+          <button class="tab" onclick="switchTab('database',this)">🗄️ Database</button>
+          <button class="tab" onclick="switchTab('customise',this)">🎨 Customise</button>
+        </div>
+
+        <!-- ── KNOWLEDGE TAB ── -->
+        <div id="tab-knowledge">
+          <div class="cards">
+            <div class="card">
+              <div class="card-title"><span class="card-title-dot"></span>Knowledge Base</div>
+              <div class="stat">
+                <div class="stat-value" id="stat-chunks">—</div>
+                <div class="stat-label">total indexed chunks</div>
+              </div>
+              <div style="margin-top:16px;display:flex;gap:8px">
+                <div style="flex:1;background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.2);border-radius:8px;padding:8px 12px;text-align:center">
+                  <div style="font-size:18px;font-weight:500;color:var(--green)" id="stat-pdf-chunks">—</div>
+                  <div style="font-size:10px;color:var(--muted);margin-top:2px">PDF chunks</div>
+                </div>
+                <div style="flex:1;background:rgba(102,126,234,.07);border:1px solid rgba(102,126,234,.2);border-radius:8px;padding:8px 12px;text-align:center">
+                  <div style="font-size:18px;font-weight:500;color:var(--accent)" id="stat-db-chunks">—</div>
+                  <div style="font-size:10px;color:var(--muted);margin-top:2px">DB chunks</div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title"><span class="card-title-dot"></span>Embed Code</div>
+              <div class="code-block" id="embed-code" style="padding-right:60px;font-size:11px">Select a site first<button class="copy-btn" onclick="copyEmbed()">Copy</button></div>
+            </div>
+            <div class="card full">
+              <div class="card-title"><span class="card-title-dot"></span>Upload PDF Document</div>
+              <div class="upload-zone" id="upload-zone">
+                <input type="file" id="file-input" accept=".pdf" onchange="handleFileSelect(this)">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">Drop a PDF here or click to browse</div>
+                <div class="upload-hint" id="upload-hint">PDF only · Content permanently indexed</div>
+              </div>
+              <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+              <div style="margin-top:14px">
+                <button class="btn-save" id="upload-btn" onclick="uploadFile()" disabled>Upload & Index</button>
+              </div>
+            </div>
+            <div class="card full">
+              <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0">
+                <span style="display:flex;align-items:center;gap:8px"><span class="card-title-dot"></span>Manage Chunks</span>
+                <div style="display:flex;gap:8px">
+                  <span id="chunk-count-label" style="font-size:11px;color:var(--muted)"></span>
+                  <button class="btn-icon" onclick="checkAndShowDuplicates()" style="font-size:12px;padding:5px 12px;color:var(--amber);border-color:rgba(251,191,36,.3)">⚡ Check Dupes</button>
+                  <button class="btn-icon" onclick="showAddChunkModal()" style="font-size:12px;padding:5px 12px">+ Add</button>
+                </div>
+              </div>
+              <div style="margin-top:16px">
+                <div class="chunk-search">
+                  <input type="text" id="chunk-search-input" placeholder="Search chunks..." oninput="searchChunks(this.value)">
+                </div>
+                <div id="chunk-list" class="chunk-list">
+                  <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Select a site to view chunks</div>
+                </div>
+                <div class="chunk-pagination">
+                  <button class="btn-icon" id="chunk-prev" onclick="chunkPage(-1)" disabled>← Prev</button>
+                  <span id="chunk-page-info" style="font-size:12px;color:var(--muted)"></span>
+                  <button class="btn-icon" id="chunk-next" onclick="chunkPage(1)" disabled>Next →</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Custom AI Rules -->
+            <div class="card full" style="margin-top:0">
+              <div class="card-title"><span class="card-title-dot"></span>Custom AI Rules</div>
+              <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px;line-height:1.6">Write instructions for the AI based on your knowledge base. These override defaults. One rule per line.</p>
+              <div class="field">
+                <textarea id="cfg-custom-rules" style="min-height:130px;font-family:'DM Mono',monospace;font-size:12px" placeholder="Examples:
+- Always mention the WELCOME10 promo code for new customers
+- Only recommend products that are in stock
+- Always ask for address (street, city, postal code) before confirming order
+- Promote express shipping for orders over £30
+- Always greet users by first name if logged in"></textarea>
+              </div>
+              <div class="info-box" style="margin-bottom:14px">💡 Rules work best when tied to your knowledge base content. Save in the Customise tab.</div>
+              <div class="field">
+                <label>Chat personality</label>
+                <select id="cfg-personality">
+                  <option value="friendly">😊 Friendly — warm and approachable</option>
+                  <option value="professional">💼 Professional — polite and precise</option>
+                  <option value="casual">💬 Casual — relaxed and conversational</option>
+                  <option value="concise">⚡ Concise — extremely brief answers</option>
+                  <option value="enthusiastic">🎉 Enthusiastic — energetic and upbeat</option>
+                </select>
+              </div>
+              <button class="btn-save" onclick="saveConfig()" style="margin-top:4px">Save Rules & Personality</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── DATABASE TAB ── -->
+        <div id="tab-database" style="display:none">
+          <div class="card full">
+            <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
+              <span style="display:flex;align-items:center;gap:8px"><span class="card-title-dot"></span>Connected Databases</span>
+              <div style="display:flex;gap:8px;align-items:center">
+                <span style="font-size:11px;color:var(--muted)" id="db-total-text"></span>
+                <button class="btn-secondary" style="font-size:12px;padding:6px 14px" onclick="syncAllDbs()">↺ Sync All</button>
+              </div>
+            </div>
+            <div id="db-connected-list" style="margin-top:16px"><div style="color:var(--muted);font-size:13px;padding:8px 0">Loading...</div></div>
+          </div>
+
+          <div class="card full" style="margin-top:20px">
+            <div class="card-title"><span class="card-title-dot"></span>Add Database</div>
+            <div class="field">
+              <label>Label <span style="color:var(--muted);font-weight:400">(name to identify this database)</span></label>
+              <input type="text" id="new-db-label" placeholder="e.g. Store Catalogue">
+            </div>
+            <div class="db-type-row">
+              <button class="db-type-btn active" id="new-db-type-sqlite" onclick="setNewDbType('sqlite')">🗂️ SQLite<br><span style="font-size:11px;opacity:.6">Local file</span></button>
+              <button class="db-type-btn" id="new-db-type-postgresql" onclick="setNewDbType('postgresql')">🐘 PostgreSQL<br><span style="font-size:11px;opacity:.6">Remote server</span></button>
+            </div>
+            <div id="new-db-fields-sqlite">
+              <div class="field"><label>SQLite file path</label><input type="text" id="new-db-sqlite-path" placeholder="e.g. C:\Users\you\Chatbot\customer.db"></div>
+              <div class="info-box">💡 Link <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px">customer.db</code> for products/FAQs and <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px">owner.db</code> for orders — both are in your project folder.</div>
+            </div>
+            <div id="new-db-fields-postgresql" style="display:none">
+              <div class="two-col">
+                <div class="field"><label>Host</label><input type="text" id="new-db-pg-host" placeholder="localhost"></div>
+                <div class="field"><label>Port</label><input type="text" id="new-db-pg-port" placeholder="5432"></div>
+              </div>
+              <div class="field"><label>Database name</label><input type="text" id="new-db-pg-name" placeholder="my_database"></div>
+              <div class="two-col">
+                <div class="field"><label>Username</label><input type="text" id="new-db-pg-user" placeholder="postgres"></div>
+                <div class="field"><label>Password</label><input type="password" id="new-db-pg-pass" placeholder="••••••••"></div>
+              </div>
+            </div>
+            <div id="new-db-test-result" style="font-size:13px;margin-bottom:12px;display:none"></div>
+            <div class="btn-row">
+              <button class="btn-secondary" onclick="testNewDb()">Test Connection</button>
+              <button class="btn-save" onclick="addDb()">Connect & Index</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── CUSTOMISE TAB ── -->
+        <div id="tab-customise" style="display:none">
+
+          <!-- Live Preview -->
+          <div class="card full">
+            <div class="card-title"><span class="card-title-dot"></span>Live Preview</div>
+            <div class="preview-wrap">
+              <div class="preview-header" id="preview-header">
+                <div id="preview-icon-wrap" style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="8" width="18" height="13" rx="3" fill="white" opacity=".92"/><rect x="7" y="11" width="3" height="3" rx="1.5" fill="#667eea"/><rect x="14" y="11" width="3" height="3" rx="1.5" fill="#667eea"/><rect x="9" y="15" width="6" height="2" rx="1" fill="#667eea"/><rect x="10" y="3" width="4" height="5" rx="1" fill="white" opacity=".92"/></svg>
+                </div>
+                <div>
+                  <div class="preview-name" id="preview-name">AI Assistant</div>
+                  <div class="preview-status" id="preview-status" style="color:#4ade80">● Online now</div>
+                </div>
+              </div>
+              <div>
+                <div class="preview-bubble-bot" id="preview-greeting">Hi! How can I help?</div><br>
+                <div class="preview-bubble-user" id="preview-user-bubble" style="margin-top:6px">Hello there!</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Identity -->
+          <div class="card full" style="margin-top:20px">
+            <div class="card-title"><span class="card-title-dot"></span>Identity</div>
+            <div class="two-col">
+              <div class="field"><label>Bot name</label><input type="text" id="cfg-name" placeholder="AI Assistant" oninput="livePreview()"></div>
+              <div class="field"><label>Status text</label><input type="text" id="cfg-status" placeholder="Online now" oninput="livePreview()"></div>
+            </div>
+            <div class="two-col">
+              <div class="field"><label>Greeting message</label><textarea id="cfg-greeting" placeholder="Hi! How can I help you today?" oninput="livePreview()" style="min-height:60px"></textarea></div>
+              <div>
+                <div class="field"><label>Input placeholder</label><input type="text" id="cfg-placeholder" placeholder="Type a message..."></div>
+                <div class="field"><label>Footer text</label><input type="text" id="cfg-footer" placeholder="Powered by AI"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bot Icon -->
+          <div class="card full" style="margin-top:20px">
+            <div class="card-title"><span class="card-title-dot"></span>Bot Icon</div>
+            <div class="icon-type-row">
+              <button class="icon-type-btn active" id="icon-type-svg"   onclick="setIconType('svg')">🤖<br><span style="font-size:10px;opacity:.7">Default Robot</span></button>
+              <button class="icon-type-btn"         id="icon-type-emoji" onclick="setIconType('emoji')">😊<br><span style="font-size:10px;opacity:.7">Emoji</span></button>
+              <button class="icon-type-btn"         id="icon-type-url"   onclick="setIconType('url')">🖼️<br><span style="font-size:10px;opacity:.7">Image URL</span></button>
+            </div>
+            <div id="icon-fields-svg"   style="font-size:12.5px;color:var(--muted);padding:6px 0">Using the default robot SVG. Choose Emoji or Image URL to customise.</div>
+            <div id="icon-fields-emoji" style="display:none"><div class="field"><label>Emoji character</label><input type="text" id="cfg-icon-emoji" placeholder="🛍️" maxlength="4" oninput="livePreview()" style="font-size:24px;text-align:center;letter-spacing:4px"></div></div>
+            <div id="icon-fields-url"   style="display:none"><div class="field"><label>Image URL <span style="color:var(--muted);font-weight:400">(square, cropped to circle)</span></label><input type="url" id="cfg-icon-url" placeholder="https://example.com/avatar.png" oninput="livePreview()"></div></div>
+          </div>
+
+          <!-- Colours -->
+          <div class="card full" style="margin-top:20px">
+            <div class="card-title"><span class="card-title-dot"></span>Colours</div>
+            <div class="three-col">
+              <div class="field"><label>Accent 1 (buttons / user bubble)</label><div class="color-row"><input type="color" id="cfg-color1-picker" oninput="syncColor('cfg-color1','cfg-color1-picker');livePreview()"><input type="text" id="cfg-color1" placeholder="#667eea" oninput="syncColor('cfg-color1-picker','cfg-color1');livePreview()"></div></div>
+              <div class="field"><label>Accent 2 (gradient end)</label><div class="color-row"><input type="color" id="cfg-color2-picker" oninput="syncColor('cfg-color2','cfg-color2-picker');livePreview()"><input type="text" id="cfg-color2" placeholder="#764ba2" oninput="syncColor('cfg-color2-picker','cfg-color2');livePreview()"></div></div>
+              <div class="field"><label>Window background</label><div class="color-row"><input type="color" id="cfg-windowbg-picker" oninput="syncColor('cfg-windowbg','cfg-windowbg-picker')"><input type="text" id="cfg-windowbg" placeholder="#0f0f1a" oninput="syncColor('cfg-windowbg-picker','cfg-windowbg')"></div></div>
+              <div class="field"><label>Header colour 1</label><div class="color-row"><input type="color" id="cfg-hbg1-picker" oninput="syncColor('cfg-hbg1','cfg-hbg1-picker');livePreview()"><input type="text" id="cfg-hbg1" placeholder="#1a1a2e" oninput="syncColor('cfg-hbg1-picker','cfg-hbg1');livePreview()"></div></div>
+              <div class="field"><label>Header colour 2</label><div class="color-row"><input type="color" id="cfg-hbg2-picker" oninput="syncColor('cfg-hbg2','cfg-hbg2-picker');livePreview()"><input type="text" id="cfg-hbg2" placeholder="#16213e" oninput="syncColor('cfg-hbg2-picker','cfg-hbg2');livePreview()"></div></div>
+              <div class="field"><label>Bot bubble background</label><div class="color-row"><input type="color" id="cfg-botbubble-picker" oninput="syncColor('cfg-botbubble','cfg-botbubble-picker')"><input type="text" id="cfg-botbubble" placeholder="rgba(255,255,255,0.08)" oninput="syncColor('cfg-botbubble-picker','cfg-botbubble')"></div></div>
+              <div class="field"><label>Bot message text colour</label><div class="color-row"><input type="color" id="cfg-bottext-picker" oninput="syncColor('cfg-bottext','cfg-bottext-picker')"><input type="text" id="cfg-bottext" placeholder="#ddddf0" oninput="syncColor('cfg-bottext-picker','cfg-bottext')"></div></div>
+              <div class="field"><label>User message text colour</label><div class="color-row"><input type="color" id="cfg-usertext-picker" oninput="syncColor('cfg-usertext','cfg-usertext-picker')"><input type="text" id="cfg-usertext" placeholder="#ffffff" oninput="syncColor('cfg-usertext-picker','cfg-usertext')"></div></div>
+              <div class="field"><label>Online dot colour</label><div class="color-row"><input type="color" id="cfg-dotcolor-picker" oninput="syncColor('cfg-dotcolor','cfg-dotcolor-picker')"><input type="text" id="cfg-dotcolor" placeholder="#4ade80" oninput="syncColor('cfg-dotcolor-picker','cfg-dotcolor')"></div></div>
+              <div class="field"><label>Input area background</label><div class="color-row"><input type="color" id="cfg-inputbg-picker" oninput="syncColor('cfg-inputbg','cfg-inputbg-picker')"><input type="text" id="cfg-inputbg" placeholder="#0f0f1a" oninput="syncColor('cfg-inputbg-picker','cfg-inputbg')"></div></div>
+              <div class="field"><label>Option button colour</label><div class="color-row"><input type="color" id="cfg-optbtn-picker" oninput="syncColor('cfg-optbtn','cfg-optbtn-picker')"><input type="text" id="cfg-optbtn" placeholder="rgba(255,255,255,0.07)" oninput="syncColor('cfg-optbtn-picker','cfg-optbtn')"></div></div>
+              <div class="field"><label>Link colour</label><div class="color-row"><input type="color" id="cfg-linkcolor-picker" oninput="syncColor('cfg-linkcolor','cfg-linkcolor-picker')"><input type="text" id="cfg-linkcolor" placeholder="#667eea" oninput="syncColor('cfg-linkcolor-picker','cfg-linkcolor')"></div></div>
+            </div>
+          </div>
+
+          <!-- Layout & Typography -->
+          <div class="card full" style="margin-top:20px">
+            <div class="card-title"><span class="card-title-dot"></span>Layout & Typography</div>
+            <div class="two-col">
+              <div>
+                <div class="slider-field"><label>Font size <span id="lbl-fontsize">13px</span></label><div class="slider-wrap"><input type="range" id="cfg-fontsize" min="11" max="17" step="1" value="13" oninput="updateSlider('cfg-fontsize','lbl-fontsize','px');livePreview()"><div class="slider-track" id="track-cfg-fontsize"></div></div></div>
+                <div class="slider-field"><label>Line height <span id="lbl-lineheight">1.45</span></label><div class="slider-wrap"><input type="range" id="cfg-lineheight" min="1.2" max="2.0" step="0.05" value="1.45" oninput="updateSlider('cfg-lineheight','lbl-lineheight','');livePreview()"><div class="slider-track" id="track-cfg-lineheight"></div></div></div>
+                <div class="slider-field"><label>Bubble padding H <span id="lbl-padh">12px</span></label><div class="slider-wrap"><input type="range" id="cfg-padh" min="6" max="24" step="2" value="12" oninput="updateSlider('cfg-padh','lbl-padh','px')"><div class="slider-track" id="track-cfg-padh"></div></div></div>
+                <div class="slider-field"><label>Bubble padding V <span id="lbl-padv">8px</span></label><div class="slider-wrap"><input type="range" id="cfg-padv" min="4" max="18" step="2" value="8" oninput="updateSlider('cfg-padv','lbl-padv','px')"><div class="slider-track" id="track-cfg-padv"></div></div></div>
+                <div class="slider-field"><label>Bubble corner radius <span id="lbl-bubbler">16px</span></label><div class="slider-wrap"><input type="range" id="cfg-bubbler" min="0" max="28" step="2" value="16" oninput="updateSlider('cfg-bubbler','lbl-bubbler','px');livePreview()"><div class="slider-track" id="track-cfg-bubbler"></div></div></div>
+                <div class="slider-field"><label>Message gap <span id="lbl-msggap">6px</span></label><div class="slider-wrap"><input type="range" id="cfg-msggap" min="2" max="20" step="2" value="6" oninput="updateSlider('cfg-msggap','lbl-msggap','px')"><div class="slider-track" id="track-cfg-msggap"></div></div></div>
+              </div>
+              <div>
+                <div class="slider-field"><label>Window width <span id="lbl-winwidth">420px</span></label><div class="slider-wrap"><input type="range" id="cfg-winwidth" min="300" max="540" step="10" value="420" oninput="updateSlider('cfg-winwidth','lbl-winwidth','px')"><div class="slider-track" id="track-cfg-winwidth"></div></div></div>
+                <div class="slider-field"><label>Window height <span id="lbl-winheight">580px</span></label><div class="slider-wrap"><input type="range" id="cfg-winheight" min="400" max="740" step="20" value="580" oninput="updateSlider('cfg-winheight','lbl-winheight','px')"><div class="slider-track" id="track-cfg-winheight"></div></div></div>
+                <div class="slider-field"><label>Launcher button size <span id="lbl-launchsize">60px</span></label><div class="slider-wrap"><input type="range" id="cfg-launchsize" min="44" max="84" step="4" value="60" oninput="updateSlider('cfg-launchsize','lbl-launchsize','px')"><div class="slider-track" id="track-cfg-launchsize"></div></div></div>
+                <div class="slider-field"><label>Header padding <span id="lbl-headpad">14px</span></label><div class="slider-wrap"><input type="range" id="cfg-headpad" min="8" max="24" step="2" value="14" oninput="updateSlider('cfg-headpad','lbl-headpad','px')"><div class="slider-track" id="track-cfg-headpad"></div></div></div>
+                <div class="slider-field"><label>Option button radius <span id="lbl-optradius">50px</span></label><div class="slider-wrap"><input type="range" id="cfg-optradius" min="4" max="50" step="4" value="50" oninput="updateSlider('cfg-optradius','lbl-optradius','px')"><div class="slider-track" id="track-cfg-optradius"></div></div></div>
+                <div class="slider-field"><label>Input field radius <span id="lbl-inputradius">12px</span></label><div class="slider-wrap"><input type="range" id="cfg-inputradius" min="0" max="24" step="2" value="12" oninput="updateSlider('cfg-inputradius','lbl-inputradius','px')"><div class="slider-track" id="track-cfg-inputradius"></div></div></div>
+              </div>
+            </div>
+            <div class="two-col" style="margin-top:8px">
+              <div class="field">
+                <label>Font family</label>
+                <select id="cfg-fontfamily">
+                  <option value="DM Sans">DM Sans (default)</option>
+                  <option value="Inter">Inter</option>
+                  <option value="Roboto">Roboto</option>
+                  <option value="Nunito">Nunito</option>
+                  <option value="Poppins">Poppins</option>
+                  <option value="Open Sans">Open Sans</option>
+                  <option value="Lato">Lato</option>
+                  <option value="monospace">Monospace</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Launcher position</label>
+                <select id="cfg-launcher-pos">
+                  <option value="right">Bottom right</option>
+                  <option value="left">Bottom left</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Behaviour -->
+          <div class="card full" style="margin-top:20px">
+            <div class="card-title"><span class="card-title-dot"></span>Behaviour</div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Show timestamps</div><div class="toggle-sub">Display send time on each message</div></div>
+              <label class="toggle"><input type="checkbox" id="cfg-timestamps"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+            </div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Sound on new message</div><div class="toggle-sub">Play a soft notification sound</div></div>
+              <label class="toggle"><input type="checkbox" id="cfg-sound"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label>Auto-open delay <span style="color:var(--muted);font-weight:400">(0 = never)</span></label>
+              <select id="cfg-autoopen">
+                <option value="0">Never (default)</option>
+                <option value="3">After 3 seconds</option>
+                <option value="5">After 5 seconds</option>
+                <option value="10">After 10 seconds</option>
+                <option value="30">After 30 seconds</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Theme Presets -->
+          <div class="card full" style="margin-top:20px">
+            <div class="card-title"><span class="card-title-dot"></span>Theme Presets</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn-secondary" style="font-size:12px;padding:8px 16px" onclick="applyPreset('default')">🌌 Default Dark</button>
+              <button class="btn-secondary" style="font-size:12px;padding:8px 16px" onclick="applyPreset('midnight')">🌃 Midnight Blue</button>
+              <button class="btn-secondary" style="font-size:12px;padding:8px 16px" onclick="applyPreset('forest')">🌿 Forest</button>
+              <button class="btn-secondary" style="font-size:12px;padding:8px 16px" onclick="applyPreset('sunset')">🌅 Sunset</button>
+              <button class="btn-secondary" style="font-size:12px;padding:8px 16px" onclick="applyPreset('slate')">🩶 Slate</button>
+              <button class="btn-secondary" style="font-size:12px;padding:8px 16px" onclick="applyPreset('rose')">🌸 Rose</button>
+            </div>
+          </div>
+
+          <div style="margin-top:20px;display:flex;gap:12px;align-items:center">
+            <button class="btn-save" onclick="saveConfig()">Save All Changes</button>
+            <button class="btn-secondary" onclick="resetConfigToDefaults()" style="color:var(--amber);border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.06)">↺ Reset to Defaults</button>
+          </div>
+
+
+      </div><!-- end site-panel -->
+    </div>
+  </div>
+</div>
+
+<!-- Modal: create a new site configuration -->
+<div class="modal-overlay" id="new-site-modal">
+  <div class="modal">
+    <div class="modal-title">Create new site</div>
+    <div class="field"><label>Site ID <span style="color:var(--muted);font-weight:400">(no spaces)</span></label><input type="text" id="new-site-id" placeholder="e.g. my_shop"></div>
+    <div class="field"><label>Bot name</label><input type="text" id="new-site-name" placeholder="AI Assistant"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="hideNewSiteModal()">Cancel</button>
+      <button class="btn-primary" style="width:auto;padding:10px 24px" onclick="createSite()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: add a manual knowledge chunk -->
+<div class="modal-overlay" id="add-chunk-modal">
+  <div class="modal">
+    <div class="modal-title">Add Knowledge Chunk</div>
+    <div class="field"><label>Chunk text</label><textarea id="new-chunk-text" style="min-height:120px" placeholder="Enter text to add to the knowledge base..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="document.getElementById('add-chunk-modal').classList.remove('show')">Cancel</button>
+      <button class="btn-primary" style="width:auto;padding:10px 24px" onclick="submitAddChunk()">Add Chunk</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: review duplicate chunks before removing them -->
+<div class="modal-overlay" id="dup-modal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title">⚡ Duplicate Chunks Found</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">
+      Found <strong id="dup-count" style="color:var(--amber)">0</strong> duplicate chunks out of
+      <strong id="dup-total">0</strong> total. Duplicates waste space and can make answers repetitive.
+    </p>
+    <div id="dup-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;max-height:200px;overflow-y:auto"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="dup-skip-btn">Keep all</button>
+      <button class="btn-primary" id="dup-dedup-btn" style="width:auto;padding:10px 24px;background:linear-gradient(135deg,var(--amber),#f97316)">Remove duplicates</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ---------------------------------------------------------------------------
+// Global app state
+// ---------------------------------------------------------------------------
+const API = 'http://127.0.0.1:5000';
+let adminKey = '', currentSite = null, selectedFile = null, newDbType = 'sqlite';
+let iconType = 'svg';
+let chunkCurrentPage = 1, chunkTotal = 0, chunkQuery = '';
+const CHUNK_LIMIT = 30;
+
+// ── Auth ──────────────────────────────────────────────────────
+// Validate the admin key against a protected endpoint before revealing the UI.
+function doLogin() {
+  const key = document.getElementById('admin-key-input').value.trim();
+  if (!key) return;
+  adminKey = key;
+  fetch(`${API}/admin/sites`, { headers: { 'X-Admin-Key': key } })
+    .then(r => { if (r.status === 401) throw new Error(); return r.json(); })
+    .then(() => {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').classList.add('visible');
+      loadSites();
+    })
+    .catch(() => { document.getElementById('login-error').style.display = 'block'; adminKey = ''; });
+}
+function doLogout() {
+  adminKey=''; currentSite=null;
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('admin-key-input').value='';
+  document.getElementById('login-error').style.display='none';
+}
+document.getElementById('admin-key-input').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+
+// ── Tabs ──────────────────────────────────────────────────────
+// Switch visible tab content and lazily refresh tab-specific data.
+function switchTab(name, btn) {
+  ['knowledge','database','customise'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===name ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if (name==='database') loadDbList();
+  if (name==='knowledge' && currentSite) { loadChunks(); loadChunkStats(); }
+}
+
+// ── Sites ─────────────────────────────────────────────────────
+// Fetch the complete site list for the left-hand sidebar.
+function loadSites() {
+  fetch(`${API}/admin/sites`, { headers:{'X-Admin-Key':adminKey} })
+    .then(r=>r.json()).then(d=>renderSiteList(d.sites||[]))
+    .catch(()=>showToast('Could not load sites','error'));
+}
+function renderSiteList(sites) {
+  const list = document.getElementById('site-list');
+  if (!sites.length) { list.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No sites yet.</div>'; return; }
+  list.innerHTML = sites.map(s=>`
+    <div class="site-item ${currentSite===s.site_id?'active':''}" onclick="selectSite('${s.site_id}')">
+      <div class="site-color-dot" style="background:${s.accent_color}"></div>
+      <div style="flex:1;min-width:0">
+        <div class="site-name">${s.bot_name||s.site_id}</div>
+        <div class="site-meta">${s.site_id}</div>
+      </div>
+      <div class="site-badges">
+        ${s.has_knowledge?`<span class="badge kb">${s.chunk_count}</span>`:'<span class="badge none">No KB</span>'}
+        ${s.has_db?`<span class="badge db">${s.db_count} DB</span>`:''}
+      </div>
+    </div>`).join('');
+}
+
+// Selecting a site hydrates the right-hand panel with saved config and stats.
+function selectSite(siteId) {
+  currentSite = siteId; selectedFile = null;
+  document.getElementById('upload-btn').disabled = true;
+  document.getElementById('upload-hint').textContent = 'PDF only · Content permanently indexed';
+  document.getElementById('empty-panel').style.display = 'none';
+  document.getElementById('site-panel').classList.add('active');
+  document.querySelectorAll('.site-item').forEach(el=>el.classList.toggle('active', el.querySelector('.site-meta').textContent===siteId));
+
+  fetch(`${API}/admin/config/${siteId}`, {headers:{'X-Admin-Key':adminKey}})
+    .then(r=>r.json()).then(loadCfg);
+
+  document.getElementById('embed-code').innerHTML =
+    `&lt;script src="http://localhost:8081/widget.js" data-site-id="${siteId}" data-api-url="http://127.0.0.1:5000"&gt;&lt;/script&gt;<button class="copy-btn" onclick="copyEmbed()">Copy</button>`;
+  document.getElementById('delete-btn').onclick = () => deleteSite(siteId);
+  loadChunkStats();
+  loadChunks();
+}
+
+// Populate all form controls from the saved site config in one place.
+function loadCfg(cfg) {
+  document.getElementById('cfg-name').value           = cfg.bot_name        || '';
+  document.getElementById('cfg-status').value         = cfg.status_text     || '';
+  document.getElementById('cfg-color1').value         = cfg.accent_color    || '#667eea';
+  document.getElementById('cfg-color1-picker').value  = cfg.accent_color    || '#667eea';
+  document.getElementById('cfg-color2').value         = cfg.accent_color_2  || '#764ba2';
+  document.getElementById('cfg-color2-picker').value  = cfg.accent_color_2  || '#764ba2';
+  document.getElementById('cfg-windowbg').value       = cfg.window_bg       || '#0f0f1a';
+  document.getElementById('cfg-windowbg-picker').value= cfg.window_bg       || '#0f0f1a';
+  document.getElementById('cfg-hbg1').value           = cfg.header_bg_1     || '#1a1a2e';
+  document.getElementById('cfg-hbg1-picker').value    = cfg.header_bg_1     || '#1a1a2e';
+  document.getElementById('cfg-hbg2').value           = cfg.header_bg_2     || '#16213e';
+  document.getElementById('cfg-hbg2-picker').value    = cfg.header_bg_2     || '#16213e';
+  document.getElementById('cfg-botbubble').value      = cfg.bot_bubble_bg   || 'rgba(255,255,255,0.08)';
+  document.getElementById('cfg-dotcolor').value       = cfg.online_dot_color|| '#4ade80';
+  document.getElementById('cfg-dotcolor-picker').value= cfg.online_dot_color|| '#4ade80';
+  document.getElementById('cfg-greeting').value       = cfg.greeting        || '';
+  document.getElementById('cfg-placeholder').value    = cfg.placeholder     || '';
+  document.getElementById('cfg-footer').value         = cfg.footer_text     || '';
+  setSlider('cfg-fontsize',   'lbl-fontsize',   'px', cfg.font_size       || 13);
+  setSlider('cfg-bubbler',    'lbl-bubbler',    'px', cfg.bubble_radius   || 16);
+  setSlider('cfg-launchsize', 'lbl-launchsize', 'px', cfg.launcher_size   || 60);
+  setSlider('cfg-winwidth',   'lbl-winwidth',   'px', cfg.window_width    || 420);
+  setSlider('cfg-winheight',  'lbl-winheight',  'px', cfg.window_height   || 580);
+  document.getElementById('cfg-launcher-pos').value  = cfg.launcher_pos    || 'right';
+  document.getElementById('cfg-fontfamily').value    = cfg.font_family     || 'DM Sans';
+  document.getElementById('cfg-timestamps').checked  = cfg.show_timestamps || false;
+  document.getElementById('cfg-sound').checked       = cfg.sound_enabled   || false;
+  document.getElementById('cfg-autoopen').value      = cfg.auto_open_delay || 0;
+  document.getElementById('cfg-personality').value   = cfg.personality        || 'friendly';
+  document.getElementById('cfg-custom-rules').value  = cfg.custom_rules       || '';
+  // New colour fields
+  const sv = (id, val) => { const e=document.getElementById(id); if(e) e.value=val; };
+  sv('cfg-bottext',        cfg.bot_text_color      || '#ddddf0');
+  sv('cfg-bottext-picker', cfg.bot_text_color      || '#ddddf0');
+  sv('cfg-usertext',       cfg.user_text_color     || '#ffffff');
+  sv('cfg-usertext-picker',cfg.user_text_color     || '#ffffff');
+  sv('cfg-inputbg',        cfg.input_bg            || '#0f0f1a');
+  sv('cfg-inputbg-picker', cfg.input_bg            || '#0f0f1a');
+  sv('cfg-optbtn',         cfg.opt_btn_color       || 'rgba(255,255,255,0.07)');
+  sv('cfg-linkcolor',      cfg.link_color          || '#667eea');
+  sv('cfg-linkcolor-picker',cfg.link_color         || '#667eea');
+  // New sliders
+  setSlider('cfg-lineheight', 'lbl-lineheight', '', cfg.line_height     || 1.45);
+  setSlider('cfg-padh',       'lbl-padh',       'px', cfg.bubble_pad_h  || 12);
+  setSlider('cfg-padv',       'lbl-padv',       'px', cfg.bubble_pad_v  || 8);
+  setSlider('cfg-msggap',     'lbl-msggap',     'px', cfg.message_gap   || 6);
+  setSlider('cfg-headpad',    'lbl-headpad',    'px', cfg.header_pad    || 14);
+  setSlider('cfg-optradius',  'lbl-optradius',  'px', cfg.opt_btn_radius|| 50);
+  setSlider('cfg-inputradius','lbl-inputradius','px', cfg.input_radius  || 12);
+  iconType = cfg.icon_type || 'svg';
+  setIconType(iconType, false);
+  document.getElementById('cfg-icon-emoji').value = cfg.icon_type==='emoji' ? cfg.icon_value||'' : '';
+  document.getElementById('cfg-icon-url').value   = cfg.icon_type==='url'   ? cfg.icon_value||'' : '';
+  document.getElementById('panel-title').textContent = cfg.bot_name || currentSite;
+  document.getElementById('panel-sub').textContent   = 'site_id: ' + currentSite;
+  document.getElementById('panel-avatar-bg').style.background = `linear-gradient(135deg,${cfg.accent_color||'#667eea'},${cfg.accent_color_2||'#764ba2'})`;
+  livePreview();
+}
+
+// ── Create / delete sites ─────────────────────────────────────
+// Modal helpers keep the creation flow simple and reusable.
+function showNewSiteModal() { document.getElementById('new-site-modal').classList.add('show'); document.getElementById('new-site-id').focus(); }
+function hideNewSiteModal() { document.getElementById('new-site-modal').classList.remove('show'); }
+function createSite() {
+  const siteId  = document.getElementById('new-site-id').value.trim().replace(/\s+/g,'_');
+  const botName = document.getElementById('new-site-name').value.trim() || 'AI Assistant';
+  if (!siteId) return;
+  fetch(`${API}/admin/sites`,{method:'POST',headers:{'X-Admin-Key':adminKey,'Content-Type':'application/json'},body:JSON.stringify({site_id:siteId,bot_name:botName})})
+    .then(r=>r.json()).then(d=>{
+      if(d.error){showToast(d.error,'error');return;}
+      showToast(`Site "${siteId}" created!`,'success');
+      hideNewSiteModal();
+      document.getElementById('new-site-id').value='';
+      document.getElementById('new-site-name').value='';
+      loadSites();
+      setTimeout(()=>selectSite(siteId),300);
+    }).catch(()=>showToast('Failed','error'));
+}
+document.getElementById('new-site-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)hideNewSiteModal();});
+document.getElementById('add-chunk-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById('add-chunk-modal').classList.remove('show');});
+
+// Deleting a site clears the active panel and reloads the sidebar state.
+function deleteSite(siteId) {
+  if (!confirm(`Delete site "${siteId}"? This cannot be undone.`)) return;
+  fetch(`${API}/admin/sites/${siteId}`,{method:'DELETE',headers:{'X-Admin-Key':adminKey}})
+    .then(r=>r.json()).then(()=>{
+      showToast(`Site "${siteId}" deleted.`,'success');
+      currentSite=null;
+      document.getElementById('site-panel').classList.remove('active');
+      document.getElementById('empty-panel').style.display='flex';
+      loadSites();
+    });
+}
+
+// ── Upload ────────────────────────────────────────────────────
+// Drag-and-drop and file-input both funnel into the same file selection state.
+const uploadZone = document.getElementById('upload-zone');
+uploadZone.addEventListener('dragover',e=>{e.preventDefault();uploadZone.classList.add('drag');});
+uploadZone.addEventListener('dragleave',()=>uploadZone.classList.remove('drag'));
+uploadZone.addEventListener('drop',e=>{e.preventDefault();uploadZone.classList.remove('drag');const f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')setFile(f);});
+function handleFileSelect(input){if(input.files[0])setFile(input.files[0]);}
+function setFile(file){selectedFile=file;document.getElementById('upload-hint').textContent=`Selected: ${file.name} (${(file.size/1024).toFixed(1)} KB)`;document.getElementById('upload-btn').disabled=false;}
+function uploadFile(){
+  if(!selectedFile||!currentSite) return;
+  const fd=new FormData(); fd.append('file',selectedFile); fd.append('site_id',currentSite);
+  const bar=document.getElementById('progress-bar'),fill=document.getElementById('progress-fill');
+  bar.style.display='block'; fill.style.width='0%';
+  document.getElementById('upload-btn').disabled=true; document.getElementById('upload-btn').textContent='Uploading...';
+  // Simulate progress until the real request completes so the UI feels responsive.
+  let prog=0; const iv=setInterval(()=>{prog=Math.min(prog+4,85);fill.style.width=prog+'%';},200);
+  fetch(`${API}/admin/upload`,{method:'POST',headers:{'X-Admin-Key':adminKey},body:fd})
+    .then(r=>r.json()).then(d=>{
+      clearInterval(iv);
+      if(d.error){fill.style.width='0%';showToast(d.error,'error');return;}
+      fill.style.width='100%';
+      showToast(`Indexed ${d.chunks} chunks!`,'success');
+      selectedFile=null; loadSites(); loadChunks(); loadChunkStats();
+      setTimeout(() => checkAndShowDuplicates(), 800);
+      setTimeout(()=>{bar.style.display='none';fill.style.width='0%';},1500);
+    }).catch(()=>{clearInterval(iv);showToast('Upload failed','error');fill.style.width='0%';})
+    .finally(()=>{document.getElementById('upload-btn').disabled=true;document.getElementById('upload-btn').textContent='Upload & Index';});
+}
+
+// ── Chunk management ──────────────────────────────────────────
+// Chunk stats combine site totals with PDF-specific counts for a quick split view.
+function loadChunkStats() {
+  if (!currentSite) return;
+  fetch(`${API}/admin/sites`,{headers:{'X-Admin-Key':adminKey}})
+    .then(r=>r.json()).then(d=>{
+      const s=(d.sites||[]).find(x=>x.site_id===currentSite);
+      const total = s ? (s.chunk_count||0) : 0;
+      document.getElementById('stat-chunks').textContent = total;
+      // Fetch pdf chunks count
+      fetch(`${API}/admin/pdf-chunks/${currentSite}`,{headers:{'X-Admin-Key':adminKey}})
+        .then(r=>r.json()).then(pd=>{
+          const pdfCount = pd.count||0;
+          document.getElementById('stat-pdf-chunks').textContent = pdfCount;
+          document.getElementById('stat-db-chunks').textContent = Math.max(0, total - pdfCount);
+        }).catch(()=>{
+          document.getElementById('stat-pdf-chunks').textContent = '—';
+          document.getElementById('stat-db-chunks').textContent = '—';
+        });
+    });
+}
+
+// Load one paginated slice of chunks for the current filters.
+function loadChunks() {
+  if (!currentSite) return;
+  const url = `${API}/admin/chunks/${currentSite}?page=${chunkCurrentPage}&limit=${CHUNK_LIMIT}&q=${encodeURIComponent(chunkQuery)}`;
+  fetch(url,{headers:{'X-Admin-Key':adminKey}})
+    .then(r=>r.json()).then(d=>renderChunks(d))
+    .catch(()=>{});
+}
+
+function renderChunks(d) {
+  chunkTotal = d.total || 0;
+  const el = document.getElementById('chunk-list');
+  document.getElementById('chunk-count-label').textContent = `${chunkTotal} chunk${chunkTotal!==1?'s':''}`;
+  if (!d.chunks || !d.chunks.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">No chunks found.</div>';
+    updatePagination();
+    return;
+  }
+  el.innerHTML = d.chunks.map(c=>`
+    <div class="chunk-item" id="chunk-row-${c.index}">
+      <span class="chunk-index">#${c.index}</span>
+      <div class="chunk-text" id="chunk-text-${c.index}">${escHtml(c.text.slice(0,300))}${c.text.length>300?'…':''}</div>
+      <div class="chunk-actions">
+        <button class="btn-icon" onclick="startEditChunk(${c.index})" title="Edit">✏️</button>
+        <button class="btn-icon danger" onclick="deleteChunk(${c.index})" title="Delete">✕</button>
+      </div>
+    </div>`).join('');
+  updatePagination();
+}
+
+// Keep Prev/Next controls aligned with the current page and result count.
+function updatePagination() {
+  const totalPages = Math.ceil(chunkTotal / CHUNK_LIMIT) || 1;
+  document.getElementById('chunk-page-info').textContent = chunkTotal ? `Page ${chunkCurrentPage} of ${totalPages}` : '';
+  document.getElementById('chunk-prev').disabled = chunkCurrentPage <= 1;
+  document.getElementById('chunk-next').disabled = chunkCurrentPage >= totalPages;
+}
+
+function chunkPage(dir) {
+  chunkCurrentPage = Math.max(1, chunkCurrentPage + dir);
+  loadChunks();
+}
+
+let searchTimer;
+function searchChunks(q) {
+  chunkQuery = q; chunkCurrentPage = 1;
+  clearTimeout(searchTimer);
+  // Debounce search so typing does not fire a request on every keystroke.
+  searchTimer = setTimeout(loadChunks, 300);
+}
+
+function startEditChunk(index) {
+  const el = document.getElementById('chunk-text-' + index);
+  const row = document.getElementById('chunk-row-' + index);
+  // Fetch the full chunk text because the list view may be truncated for readability.
+  fetch(`${API}/admin/chunks/${currentSite}?page=1&limit=9999`,{headers:{'X-Admin-Key':adminKey}})
+    .then(r=>r.json()).then(d=>{
+      const chunk = d.chunks.find(c=>c.index===index);
+      if (!chunk) return;
+      el.contentEditable = 'true';
+      el.textContent = chunk.text;
+      el.classList.add('editing');
+      el.focus();
+      // Swap the action buttons while the row is in edit mode.
+      row.querySelector('.chunk-actions').innerHTML =`
+        <button class="btn-icon" onclick="saveEditChunk(${index})" style="color:var(--green);border-color:rgba(74,222,128,.3)">✓</button>
+        <button class="btn-icon danger" onclick="cancelEdit(${index})">✕</button>`;
+    });
+}
+
+function saveEditChunk(index) {
+  const el = document.getElementById('chunk-text-' + index);
+  const text = el.textContent.trim();
+  if (!text) { showToast('Chunk cannot be empty','error'); return; }
+  fetch(`${API}/admin/chunks/${currentSite}/${index}`,{
+    method:'PUT', headers:{'X-Admin-Key':adminKey,'Content-Type':'application/json'},
+    body: JSON.stringify({text})
+  }).then(r=>r.json()).then(d=>{
+    if(d.error){showToast(d.error,'error');return;}
+    showToast('Chunk updated','success');
+    loadChunks();
+  });
+}
+
+function cancelEdit(index) {
+  loadChunks();
+}
+
+function deleteChunk(index) {
+  if (!confirm('Delete this chunk from the knowledge base?')) return;
+  fetch(`${API}/admin/chunks/${currentSite}/${index}`,{
+    method:'DELETE', headers:{'X-Admin-Key':adminKey}
+  }).then(r=>r.json()).then(d=>{
+    if(d.error){showToast(d.error,'error');return;}
+    showToast('Chunk deleted','success');
+    loadChunks(); loadChunkStats(); loadSites();
+  });
+}
+
+function showAddChunkModal() {
+  document.getElementById('new-chunk-text').value='';
+  document.getElementById('add-chunk-modal').classList.add('show');
+  document.getElementById('new-chunk-text').focus();
+}
+function submitAddChunk() {
+  const text = document.getElementById('new-chunk-text').value.trim();
+  if (!text) { showToast('Chunk text is required','error'); return; }
+  fetch(`${API}/admin/chunks/${currentSite}`,{
+    method:'POST', headers:{'X-Admin-Key':adminKey,'Content-Type':'application/json'},
+    body: JSON.stringify({text})
+  }).then(r=>r.json()).then(d=>{
+    if(d.error){showToast(d.error,'error');return;}
+    showToast(`Chunk added! Total: ${d.total}`,'success');
+    document.getElementById('add-chunk-modal').classList.remove('show');
+    loadChunks(); loadChunkStats(); loadSites();
+  });
+}
+
+// Escape content before injecting it back into HTML markup.
+function escHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Database (multi-DB) ───────────────────────────────────────
+// Toggle the DB form between SQLite and PostgreSQL inputs.
+function setNewDbType(type) {
+  newDbType = type;
+  document.getElementById('new-db-fields-sqlite').style.display    = type==='sqlite'     ? 'block' : 'none';
+  document.getElementById('new-db-fields-postgresql').style.display = type==='postgresql' ? 'block' : 'none';
+  document.getElementById('new-db-type-sqlite').classList.toggle('active',    type==='sqlite');
+  document.getElementById('new-db-type-postgresql').classList.toggle('active', type==='postgresql');
+}
+// Read the "Add Database" form and normalise it into one config object.
+function getNewDbConfig() {
+  const label = document.getElementById('new-db-label').value.trim()||'Database';
+  if (newDbType==='sqlite') return {type:'sqlite',label,path:document.getElementById('new-db-sqlite-path').value.trim()};
+  return {type:'postgresql',label,
+    host:document.getElementById('new-db-pg-host').value.trim()||'localhost',
+    port:parseInt(document.getElementById('new-db-pg-port').value.trim())||5432,
+    dbname:document.getElementById('new-db-pg-name').value.trim(),
+    user:document.getElementById('new-db-pg-user').value.trim(),
+    password:document.getElementById('new-db-pg-pass').value};
+}
+// Fetch and render all databases currently attached to the active site.
+function loadDbList() {
+  if(!currentSite) return;
+  fetch(`${API}/admin/db/${currentSite}`,{headers:{'X-Admin-Key':adminKey}})
+    .then(r=>r.json()).then(d=>renderDbList(d.databases||[]))
+    .catch(()=>{});
+}
+function renderDbList(dbs) {
+  const el=document.getElementById('db-connected-list');
+  const tot=document.getElementById('db-total-text');
+  tot.textContent=dbs.length?`${dbs.length} connected`:'';
+  if(!dbs.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0;text-align:center">No databases connected yet.</div>';return;}
+  el.innerHTML=dbs.map(db=>{
+    const meta=db.type==='sqlite'?db.path||'':`${db.user||''}@${db.host||''}:${db.dbname||''}`;
+    return`<div class="db-item" id="dbitem-${db.id}">
+      <div class="db-item-dot"></div>
+      <div class="db-item-info">
+        <div class="db-item-label">${db.label||'DB'} <span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;margin-left:4px">${db.type}</span></div>
+        <div class="db-item-meta">${meta}</div>
+      </div>
+      <div class="db-item-actions">
+        <button class="btn-icon" onclick="syncOneDb('${db.id}')">↺ Sync</button>
+        <button class="btn-icon danger" onclick="removeDb('${db.id}','${db.label||'DB'}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+// Test the in-progress DB config before saving it to the site.
+function testNewDb(){
+  const cfg=getNewDbConfig();
+  const el=document.getElementById('new-db-test-result');
+  el.style.display='block'; el.style.color='var(--muted)'; el.textContent='Testing...';
+  fetch(`${API}/admin/db/test`,{method:'POST',headers:{'X-Admin-Key':adminKey,'Content-Type':'application/json'},body:JSON.stringify(cfg)})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){el.style.color='var(--green)';el.textContent=`✓ OK — ${d.row_count} rows found.`;}
+      else{el.style.color='var(--red)';el.textContent=`✗ ${d.error}`;}
+    }).catch(()=>{el.style.color='var(--red)';el.textContent='Could not reach server.';});
+}
+function addDb(){
+  const cfg=getNewDbConfig();
+  if(newDbType==='sqlite'&&!cfg.path){showToast('Enter the SQLite path','error');return;}
+  showToast('Connecting...','success');
+  fetch(`${API}/admin/db/${currentSite}/add`,{method:'POST',headers:{'X-Admin-Key':adminKey,'Content-Type':'application/json'},body:JSON.stringify(cfg)})
+    .then(r=>r.json()).then(d=>{
+      if(d.error){showToast(d.error,'error');return;}
+      showToast(d.message,'success');
+      document.getElementById('new-db-label').value='';
+      document.getElementById('new-db-sqlite-path').value='';
+      document.getElementById('new-db-test-result').style.display='none';
+      loadDbList(); loadSites(); loadChunks(); loadChunkStats();
+      setTimeout(() => checkAndShowDuplicates(), 800);
+    }).catch(()=>showToast('Failed','error'));
+}
+function syncOneDb(dbId){
+  fetch(`${API}/admin/db/${currentSite}/${dbId}/sync`,{method:'POST',headers:{'X-Admin-Key':adminKey}})
+    .then(r=>r.json()).then(d=>{
+      if(d.error){showToast(d.error,'error');return;}
+      showToast(d.message,'success'); loadSites(); loadChunks(); loadChunkStats();
+    });
+}
+function syncAllDbs(){
+  fetch(`${API}/admin/db/${currentSite}/sync-all`,{method:'POST',headers:{'X-Admin-Key':adminKey}})
+    .then(r=>r.json()).then(d=>{
+      if(d.error){showToast(d.error,'error');return;}
+      showToast(d.message,'success'); loadSites(); loadChunks(); loadChunkStats();
+    });
+}
+function removeDb(dbId,label){
+  if(!confirm(`Remove "${label}"?`)) return;
+  fetch(`${API}/admin/db/${currentSite}/${dbId}`,{method:'DELETE',headers:{'X-Admin-Key':adminKey}})
+    .then(r=>r.json()).then(d=>{showToast(d.message||'Removed','success');loadDbList();loadSites();loadChunks();loadChunkStats();});
+}
+
+// ── Customise ─────────────────────────────────────────────────
+// Icon type controls keep the preview and saved config aligned.
+function setIconType(type, update=true) {
+  iconType = type;
+  ['svg','emoji','url'].forEach(t=>{
+    document.getElementById('icon-type-'+t).classList.toggle('active', t===type);
+    document.getElementById('icon-fields-'+t).style.display = t===type ? 'block' : 'none';
+  });
+  if (update) livePreview();
+}
+
+function getIconValue() {
+  if (iconType==='emoji') return document.getElementById('cfg-icon-emoji').value.trim();
+  if (iconType==='url')   return document.getElementById('cfg-icon-url').value.trim();
+  return '';
+}
+
+function syncColor(textId, pickerId) {
+  document.getElementById(textId).value = document.getElementById(pickerId).value;
+}
+
+// Slider helpers keep labels and gradient tracks in sync with range inputs.
+function setSlider(id, labelId, suffix, val) {
+  const el = document.getElementById(id);
+  el.value = val;
+  document.getElementById(labelId).textContent = val + suffix;
+  updateTrack(id);
+}
+function updateSlider(id, labelId, suffix) {
+  const el = document.getElementById(id);
+  document.getElementById(labelId).textContent = el.value + suffix;
+  updateTrack(id);
+}
+function updateTrack(id) {
+  const el = document.getElementById(id);
+  const pct = ((el.value - el.min) / (el.max - el.min)) * 100;
+  const track = document.getElementById('track-' + id);
+  if (track) track.style.width = pct + '%';
+}
+// Initialise range-track fills once so the UI starts with correct values.
+['cfg-fontsize','cfg-bubbler','cfg-launchsize','cfg-winwidth','cfg-winheight','cfg-lineheight','cfg-padh','cfg-padv','cfg-msggap','cfg-headpad','cfg-optradius','cfg-inputradius'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => updateTrack(id));
+});
+
+function livePreview() {
+  const name    = document.getElementById('cfg-name').value    || 'AI Assistant';
+  const status  = document.getElementById('cfg-status').value  || 'Online now';
+  const c1      = document.getElementById('cfg-color1').value  || '#667eea';
+  const c2      = document.getElementById('cfg-color2').value  || '#764ba2';
+  const hbg1    = document.getElementById('cfg-hbg1').value    || '#1a1a2e';
+  const hbg2    = document.getElementById('cfg-hbg2').value    || '#16213e';
+  const greeting = document.getElementById('cfg-greeting').value || 'Hi! How can I help?';
+  const r = document.getElementById('cfg-bubbler').value || 16;
+
+  document.getElementById('preview-header').style.background = `linear-gradient(135deg,${hbg1},${hbg2})`;
+  document.getElementById('preview-header').style.borderRadius = '10px';
+  document.getElementById('preview-name').textContent = name;
+  document.getElementById('preview-status').textContent = '● ' + status;
+  document.getElementById('preview-greeting').textContent = greeting.slice(0,55) + (greeting.length>55?'...':'');
+  document.getElementById('preview-greeting').style.borderRadius = r + 'px';
+  document.getElementById('preview-user-bubble').style.background = `linear-gradient(135deg,${c1},${c2})`;
+  document.getElementById('preview-user-bubble').style.borderRadius = r + 'px';
+  document.getElementById('preview-icon-wrap').style.background = `linear-gradient(135deg,${c1},${c2})`;
+
+  // Swap preview icon rendering based on the selected icon source.
+  const iconWrap = document.getElementById('preview-icon-wrap');
+  const val = getIconValue();
+  if (iconType==='emoji' && val) {
+    iconWrap.innerHTML = `<span style="font-size:20px;line-height:1">${val}</span>`;
+  } else if (iconType==='url' && val) {
+    iconWrap.innerHTML = `<img src="${val}" width="36" height="36" style="object-fit:cover;border-radius:50%">`;
+  } else {
+    iconWrap.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="8" width="18" height="13" rx="3" fill="white" opacity=".92"/><rect x="7" y="11" width="3" height="3" rx="1.5" fill="${c1}"/><rect x="14" y="11" width="3" height="3" rx="1.5" fill="${c1}"/><rect x="9" y="15" width="6" height="2" rx="1" fill="${c1}"/><rect x="10" y="3" width="4" height="5" rx="1" fill="white" opacity=".92"/></svg>`;
+  }
+}
+
+// Restore the customizer form to the default widget settings.
+function resetConfigToDefaults() {
+  if (!confirm('Reset all customisation to defaults? This will overwrite your current settings.')) return;
+  loadCfg({
+    bot_name:'AI Assistant', status_text:'Online now',
+    accent_color:'#667eea', accent_color_2:'#764ba2',
+    window_bg:'#0f0f1a', header_bg_1:'#1a1a2e', header_bg_2:'#16213e',
+    bot_bubble_bg:'rgba(255,255,255,0.08)', online_dot_color:'#4ade80',
+    greeting:'Hi! How can I help you today?',
+    placeholder:'Type a message...', footer_text:'Powered by AI',
+    icon_type:'svg', icon_value:'',
+    font_size:13, bubble_radius:16, launcher_size:60,
+    window_width:420, window_height:580,
+    launcher_pos:'right', font_family:'DM Sans',
+    show_timestamps:false, sound_enabled:false, auto_open_delay:0,
+    personality:'friendly', custom_rules:'',
+    bot_text_color:'#ddddf0', user_text_color:'#ffffff',
+    input_bg:'#0f0f1a', opt_btn_color:'rgba(255,255,255,0.07)', link_color:'#667eea',
+    line_height:1.45, bubble_pad_h:12, bubble_pad_v:8, message_gap:6,
+    header_pad:14, opt_btn_radius:50, input_radius:12
+  });
+  showToast('Reset to defaults — click Save to apply.', 'success');
+}
+
+// Collect every customization control and save the site config in one request.
+function saveConfig() {
+  if (!currentSite) return;
+  const cfg = {
+    bot_name:       document.getElementById('cfg-name').value.trim()        || 'AI Assistant',
+    status_text:    document.getElementById('cfg-status').value.trim()      || 'Online now',
+    accent_color:   document.getElementById('cfg-color1').value.trim()      || '#667eea',
+    accent_color_2: document.getElementById('cfg-color2').value.trim()      || '#764ba2',
+    window_bg:      document.getElementById('cfg-windowbg').value.trim()    || '#0f0f1a',
+    header_bg_1:    document.getElementById('cfg-hbg1').value.trim()        || '#1a1a2e',
+    header_bg_2:    document.getElementById('cfg-hbg2').value.trim()        || '#16213e',
+    greeting:       document.getElementById('cfg-greeting').value.trim(),
+    placeholder:    document.getElementById('cfg-placeholder').value.trim(),
+    footer_text:    document.getElementById('cfg-footer').value.trim(),
+    icon_type:        iconType,
+    icon_value:       getIconValue(),
+    font_size:        parseInt(document.getElementById('cfg-fontsize').value),
+    bubble_radius:    parseInt(document.getElementById('cfg-bubbler').value),
+    launcher_size:    parseInt(document.getElementById('cfg-launchsize').value),
+    window_width:     parseInt(document.getElementById('cfg-winwidth').value),
+    window_height:    parseInt(document.getElementById('cfg-winheight').value),
+    launcher_pos:     document.getElementById('cfg-launcher-pos').value,
+    font_family:      document.getElementById('cfg-fontfamily').value,
+    bot_bubble_bg:    document.getElementById('cfg-botbubble').value.trim() || 'rgba(255,255,255,0.08)',
+    online_dot_color: document.getElementById('cfg-dotcolor').value.trim()  || '#4ade80',
+    show_timestamps:  document.getElementById('cfg-timestamps').checked,
+    sound_enabled:    document.getElementById('cfg-sound').checked,
+    auto_open_delay:  parseInt(document.getElementById('cfg-autoopen').value) || 0,
+    personality:      document.getElementById('cfg-personality').value  || 'friendly',
+    custom_rules:     document.getElementById('cfg-custom-rules').value.trim(),
+    // New colour fields
+    bot_text_color:   (document.getElementById('cfg-bottext')       ||{}).value   || '#ddddf0',
+    user_text_color:  (document.getElementById('cfg-usertext')      ||{}).value   || '#ffffff',
+    input_bg:         (document.getElementById('cfg-inputbg')       ||{}).value   || '#0f0f1a',
+    opt_btn_color:    (document.getElementById('cfg-optbtn')        ||{}).value   || 'rgba(255,255,255,0.07)',
+    link_color:       (document.getElementById('cfg-linkcolor')     ||{}).value   || '#667eea',
+    // New slider fields
+    line_height:      parseFloat(document.getElementById('cfg-lineheight')  .value) || 1.45,
+    bubble_pad_h:     parseInt(document.getElementById('cfg-padh')           .value) || 12,
+    bubble_pad_v:     parseInt(document.getElementById('cfg-padv')           .value) || 8,
+    message_gap:      parseInt(document.getElementById('cfg-msggap')         .value) || 6,
+    header_pad:       parseInt(document.getElementById('cfg-headpad')        .value) || 14,
+    opt_btn_radius:   parseInt(document.getElementById('cfg-optradius')      .value) || 50,
+    input_radius:     parseInt(document.getElementById('cfg-inputradius')    .value) || 12
+  };
+  fetch(`${API}/admin/config/${currentSite}`,{method:'POST',headers:{'X-Admin-Key':adminKey,'Content-Type':'application/json'},body:JSON.stringify(cfg)})
+    .then(r=>r.json()).then(d=>{
+      if(d.error){showToast(d.error,'error');return;}
+      showToast('Config saved!','success');
+      document.getElementById('panel-title').textContent=cfg.bot_name;
+      document.getElementById('panel-avatar-bg').style.background=`linear-gradient(135deg,${cfg.accent_color},${cfg.accent_color_2})`;
+      loadSites();
+    }).catch(()=>showToast('Failed','error'));
+}
+
+// ── Theme presets ─────────────────────────────────────────────
+// Quick preset palette swaps for the customizer.
+const PRESETS = {
+  default:  { accent_color:'#667eea', accent_color_2:'#764ba2', header_bg_1:'#1a1a2e', header_bg_2:'#16213e', window_bg:'#0f0f1a', online_dot_color:'#4ade80', bot_bubble_bg:'rgba(255,255,255,0.08)' },
+  midnight: { accent_color:'#3b82f6', accent_color_2:'#1d4ed8', header_bg_1:'#0f172a', header_bg_2:'#1e3a5f', window_bg:'#0a0f1e', online_dot_color:'#38bdf8', bot_bubble_bg:'rgba(59,130,246,0.12)' },
+  forest:   { accent_color:'#22c55e', accent_color_2:'#16a34a', header_bg_1:'#0f1f0f', header_bg_2:'#1a2e1a', window_bg:'#0a130a', online_dot_color:'#4ade80', bot_bubble_bg:'rgba(34,197,94,0.1)' },
+  sunset:   { accent_color:'#f97316', accent_color_2:'#dc2626', header_bg_1:'#1c0a00', header_bg_2:'#2d1000', window_bg:'#0f0700', online_dot_color:'#fb923c', bot_bubble_bg:'rgba(249,115,22,0.1)' },
+  slate:    { accent_color:'#94a3b8', accent_color_2:'#64748b', header_bg_1:'#0f172a', header_bg_2:'#1e293b', window_bg:'#0a0f1a', online_dot_color:'#cbd5e1', bot_bubble_bg:'rgba(148,163,184,0.1)' },
+  rose:     { accent_color:'#f43f5e', accent_color_2:'#be123c', header_bg_1:'#1c0010', header_bg_2:'#2d0018', window_bg:'#0f0009', online_dot_color:'#fb7185', bot_bubble_bg:'rgba(244,63,94,0.1)' }
+};
+
+function applyPreset(name) {
+  const p = PRESETS[name];
+  if (!p) return;
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  };
+  setVal('cfg-color1',          p.accent_color);
+  setVal('cfg-color1-picker',   p.accent_color);
+  setVal('cfg-color2',          p.accent_color_2);
+  setVal('cfg-color2-picker',   p.accent_color_2);
+  setVal('cfg-hbg1',            p.header_bg_1);
+  setVal('cfg-hbg1-picker',     p.header_bg_1);
+  setVal('cfg-hbg2',            p.header_bg_2);
+  setVal('cfg-hbg2-picker',     p.header_bg_2);
+  setVal('cfg-windowbg',        p.window_bg);
+  setVal('cfg-windowbg-picker', p.window_bg);
+  setVal('cfg-botbubble',       p.bot_bubble_bg);
+  setVal('cfg-dotcolor',        p.online_dot_color);
+  setVal('cfg-dotcolor-picker', p.online_dot_color);
+  livePreview();
+  showToast(`Preset "${name}" applied — click Save to keep it.`, 'success');
+}
+
+// ── Duplicate detection ───────────────────────────────────────
+// Duplicate checking is triggered after uploads/syncs to keep the KB tidy.
+function checkAndShowDuplicates(onConfirm) {
+  if (!currentSite) return;
+  fetch(`${API}/admin/chunks/${currentSite}/duplicates`, { headers:{'X-Admin-Key':adminKey} })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.count) {
+        showToast('No duplicate chunks found ✓', 'success');
+        if (onConfirm) onConfirm();
+        return;
+      }
+      // Populate the modal with a short preview list rather than every duplicate.
+      const modal = document.getElementById('dup-modal');
+      document.getElementById('dup-count').textContent = d.count;
+      document.getElementById('dup-total').textContent = d.total;
+      document.getElementById('dup-list').innerHTML = d.duplicates.slice(0,8).map(dp =>
+        `<div style="padding:7px 10px;background:var(--surface2);border-radius:8px;font-size:11.5px;color:var(--muted);font-family:'DM Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escHtml(dp.preview)}">
+          #${dp.index} (copy of #${dp.duplicate_of}) — ${escHtml(dp.preview.slice(0,80))}…
+        </div>`
+      ).join('') + (d.count > 8 ? `<div style="font-size:11px;color:var(--muted);padding:6px 0">…and ${d.count-8} more</div>` : '');
+      modal.classList.add('show');
+      document.getElementById('dup-dedup-btn').onclick = () => {
+        deduplicateChunks();
+        modal.classList.remove('show');
+        if (onConfirm) onConfirm();
+      };
+      document.getElementById('dup-skip-btn').onclick = () => {
+        modal.classList.remove('show');
+        if (onConfirm) onConfirm();
+      };
+    })
+    .catch(() => { if (onConfirm) onConfirm(); });
+}
+
+function deduplicateChunks() {
+  fetch(`${API}/admin/chunks/${currentSite}/deduplicate`, { method:'POST', headers:{'X-Admin-Key':adminKey} })
+    .then(r => r.json())
+    .then(d => {
+      showToast(d.message, 'success');
+      loadChunks(); loadChunkStats(); loadSites();
+    })
+    .catch(() => showToast('Deduplication failed', 'error'));
+}
+
+// ── Embed / toast ──────────────────────────────────────────────
+// Small shared UI utilities for copy feedback and status toasts.
+function copyEmbed() {
+  navigator.clipboard.writeText(`<script src="http://localhost:8081/widget.js" data-site-id="${currentSite}" data-api-url="http://127.0.0.1:5000"><\/script>`)
+    .then(()=>showToast('Copied!','success'));
+}
+let toastTimer;
+function showToast(msg, type='success') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=`show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{t.className='';},3000);
+}
+</script>
+</body>
+</html>

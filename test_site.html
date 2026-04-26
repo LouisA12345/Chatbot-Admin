@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acme Electronics — Support</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080c10;
+      --surface: #0e1520;
+      --surface2: #141d2e;
+      --border: #1e2d45;
+      --accent: #00d4ff;
+      --accent2: #ff6b35;
+      --text: #e8f4fd;
+      --muted: #5a7a99;
+      --success: #00e676;
+      --danger: #ff4d6d;
+      --mono: 'Space Mono', monospace;
+      --sans: 'Syne', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; overflow-x: hidden; }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0; opacity: 0.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 200;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 3rem;
+      background: rgba(8,12,16,0.88);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo { font-family: var(--mono); font-size: 1rem; letter-spacing: 0.2em; color: var(--accent); text-transform: uppercase; }
+    .logo span { color: var(--text); }
+    nav ul { display: flex; gap: 2.5rem; list-style: none; }
+    nav a { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+    nav a:hover { color: var(--accent); }
+
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+
+    .nav-cta {
+      font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase;
+      background: var(--accent); color: var(--bg); padding: 0.55rem 1.2rem;
+      border: none; cursor: pointer; font-weight: 700; text-decoration: none;
+      transition: background 0.2s, transform 0.1s; display: inline-block;
+    }
+    .nav-cta:hover { background: #33ddff; transform: translateY(-1px); }
+
+    .nav-auth-btn {
+      font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase;
+      background: transparent; color: var(--muted); padding: 0.5rem 1rem;
+      border: 1px solid var(--border); cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .nav-auth-btn:hover { color: var(--text); border-color: var(--muted); }
+    .nav-auth-btn.primary { background: rgba(0,212,255,0.08); color: var(--accent); border-color: rgba(0,212,255,0.3); }
+    .nav-auth-btn.primary:hover { background: rgba(0,212,255,0.15); }
+
+    /* User menu */
+    .user-menu-wrap { position: relative; }
+    .user-pill {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.25);
+      padding: 0.45rem 0.9rem; cursor: pointer;
+      font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em; color: var(--accent);
+      text-transform: uppercase; transition: background 0.2s;
+    }
+    .user-pill:hover { background: rgba(0,212,255,0.14); }
+    .user-pill-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse-g 2s infinite; }
+    @keyframes pulse-g { 0%,100%{box-shadow:0 0 0 0 rgba(0,230,118,.4)} 50%{box-shadow:0 0 0 5px rgba(0,230,118,0)} }
+    .user-pill-arrow { opacity: 0.5; font-size: 0.55rem; transition: transform 0.2s; }
+    .user-menu-wrap.open .user-pill-arrow { transform: rotate(180deg); }
+
+    .user-dropdown {
+      display: none; position: absolute; top: calc(100% + 8px); right: 0;
+      min-width: 200px; background: var(--surface);
+      border: 1px solid var(--border); z-index: 300;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+    }
+    .user-menu-wrap.open .user-dropdown { display: block; animation: drop-in 0.15s ease; }
+    @keyframes drop-in { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+
+    .user-dropdown-header { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .user-dropdown-name { font-size: 0.85rem; font-weight: 600; }
+    .user-dropdown-email { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); margin-top: 3px; }
+
+    .user-dropdown-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 16px; font-family: var(--mono); font-size: 0.68rem;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+      cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.15s, color 0.15s;
+    }
+    .user-dropdown-item:last-child { border-bottom: none; }
+    .user-dropdown-item:hover { background: var(--surface2); color: var(--text); }
+    .user-dropdown-item.danger { color: var(--danger); }
+    .user-dropdown-item.danger:hover { background: rgba(255,77,109,0.08); color: var(--danger); }
+
+    /* ── AUTH MODALS ── */
+    .modal-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
+      align-items: center; justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .auth-modal {
+      width: 440px; max-width: calc(100vw - 2rem);
+      background: var(--surface); border: 1px solid var(--border);
+      position: relative; animation: modal-in 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes modal-in { from{opacity:0;transform:scale(0.94) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+
+    .modal-accent-bar { height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+
+    .modal-inner { padding: 32px; }
+
+    .modal-tag { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+    .modal-title { font-size: 1.6rem; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.02em; }
+    .modal-sub { font-size: 0.82rem; color: var(--muted); margin-bottom: 28px; line-height: 1.5; }
+
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      color: var(--muted); width: 32px; height: 32px;
+      cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .modal-close:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+
+    /* Form */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { margin-bottom: 14px; }
+    .form-label { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; display: block; }
+    .form-input {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 10px 13px; font-family: var(--mono); font-size: 0.78rem;
+      outline: none; transition: border-color 0.2s;
+    }
+    .form-input:focus { border-color: var(--accent); }
+    .form-input::placeholder { color: var(--muted); }
+
+    .form-error { font-family: var(--mono); font-size: 0.65rem; color: var(--danger); margin-top: 4px; display: none; }
+    .form-error.show { display: block; }
+
+    .form-submit {
+      width: 100%; padding: 13px; margin-top: 6px;
+      background: var(--accent); color: var(--bg);
+      font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase;
+      font-weight: 700; border: none; cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .form-submit:hover { background: #33ddff; transform: translateY(-1px); }
+    .form-submit:disabled { opacity: 0.5; transform: none; cursor: default; }
+
+    .modal-switch { text-align: center; margin-top: 18px; font-size: 0.78rem; color: var(--muted); }
+    .modal-switch a { color: var(--accent); cursor: pointer; text-decoration: none; }
+    .modal-switch a:hover { text-decoration: underline; }
+
+    .modal-divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+
+    /* Alert banner inside modal */
+    .modal-alert {
+      padding: 10px 13px; margin-bottom: 16px; font-family: var(--mono); font-size: 0.7rem;
+      line-height: 1.5; display: none;
+    }
+    .modal-alert.success { background: rgba(0,230,118,0.08); border: 1px solid rgba(0,230,118,0.25); color: var(--success); }
+    .modal-alert.error { background: rgba(255,77,109,0.08); border: 1px solid rgba(255,77,109,0.25); color: var(--danger); }
+    .modal-alert.show { display: block; }
+
+    /* Profile modal extra */
+    .profile-field { padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .profile-field:last-child { border-bottom: none; }
+    .profile-key { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .profile-val { font-size: 0.85rem; text-align: right; }
+
+    /* ── HERO ── */
+    .hero { position: relative; padding: 7rem 3rem 5rem; overflow: hidden; }
+    .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; max-width: 1100px; margin: 0 auto; }
+    .hero-label { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.3em; color: var(--accent); text-transform: uppercase; margin-bottom: 1.5rem; }
+    .hero h1 { font-size: clamp(2.8rem,5vw,4.5rem); font-weight: 800; line-height: 1.05; letter-spacing: -0.03em; margin-bottom: 1.5rem; }
+    .hero h1 em { font-style: normal; color: var(--accent); }
+    .hero p { font-size: 1.05rem; color: var(--muted); line-height: 1.7; max-width: 440px; margin-bottom: 2.5rem; }
+    .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .btn-primary { background: var(--accent); color: var(--bg); font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; padding: 0.9rem 2rem; border: none; cursor: pointer; text-decoration: none; display: inline-block; transition: all 0.2s; }
+    .btn-primary:hover { background: #33ddff; transform: translateY(-2px); }
+    .btn-ghost { background: transparent; color: var(--text); font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 400; padding: 0.9rem 2rem; border: 1px solid var(--border); cursor: pointer; text-decoration: none; display: inline-block; transition: all 0.2s; }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* HERO VISUAL */
+    .hero-visual { position: relative; display: flex; align-items: center; justify-content: center; }
+    .status-card { background: var(--surface); border: 1px solid var(--border); padding: 2rem; width: 100%; max-width: 380px; position: relative; overflow: hidden; }
+    .status-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), transparent); }
+    .status-row { display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 0; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 0.75rem; }
+    .status-row:last-child { border-bottom: none; }
+    .status-label { color: var(--muted); letter-spacing: 0.1em; }
+    .status-val { color: var(--text); }
+    .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; animation: pulse 2s infinite; }
+    .dot.green { background: var(--success); }
+    .dot.orange { background: var(--accent2); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* STATS BAR */
+    .stats-bar { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); display: grid; grid-template-columns: repeat(4,1fr); }
+    .stat { padding: 2rem; text-align: center; border-right: 1px solid var(--border); }
+    .stat:last-child { border-right: none; }
+    .stat-num { font-family: var(--mono); font-size: 2rem; font-weight: 700; color: var(--accent); display: block; }
+    .stat-label { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.3rem; }
+
+    /* SECTIONS */
+    section { max-width: 1100px; margin: 0 auto; padding: 5rem 3rem; }
+    .section-tag { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.35em; color: var(--accent); text-transform: uppercase; margin-bottom: 0.8rem; }
+    h2 { font-size: clamp(1.8rem,3vw,2.8rem); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.5rem; }
+    .section-intro { color: var(--muted); font-size: 0.95rem; margin-bottom: 3rem; max-width: 500px; }
+
+    /* CARDS */
+    .cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); }
+    .card { background: var(--surface); padding: 2rem; transition: background 0.2s; position: relative; overflow: hidden; }
+    .card:hover { background: var(--surface2); }
+    .card-icon { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.2rem; font-size: 1.3rem; }
+    .card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.6rem; }
+    .card p { font-size: 0.85rem; color: var(--muted); line-height: 1.65; }
+    .card-accent { position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--accent); transform: scaleY(0); transition: transform 0.3s; transform-origin: bottom; }
+    .card:hover .card-accent { transform: scaleY(1); }
+
+    /* SHIPPING */
+    .shipping-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .ship-option { background: var(--surface); border: 1px solid var(--border); padding: 2rem; position: relative; }
+    .ship-option.featured { border-color: var(--accent); }
+    .ship-option.featured::after { content:'POPULAR'; position:absolute; top:1rem; right:1rem; font-family:var(--mono); font-size:0.6rem; letter-spacing:0.2em; background:var(--accent); color:var(--bg); padding:0.2rem 0.5rem; font-weight:700; }
+    .ship-option h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .ship-days { font-family: var(--mono); font-size: 2rem; font-weight: 700; color: var(--accent); margin: 0.8rem 0 0.4rem; }
+    .ship-note { font-size: 0.82rem; color: var(--muted); }
+    .free-tag { display:inline-block; background:var(--success); color:var(--bg); font-family:var(--mono); font-size:0.65rem; letter-spacing:0.15em; padding:0.2rem 0.6rem; margin-top:1rem; font-weight:700; }
+
+    /* ISSUES */
+    .issues { display: flex; flex-direction: column; gap: 1px; background: var(--border); }
+    .issue { background: var(--surface); padding: 1.8rem 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; transition: background 0.2s; }
+    .issue:hover { background: var(--surface2); }
+    .issue-problem { font-size: 0.9rem; font-weight: 600; display: flex; align-items: flex-start; gap: 0.8rem; }
+    .issue-icon { font-family: var(--mono); font-size: 0.65rem; background: var(--accent2); color: var(--bg); padding: 0.2rem 0.4rem; margin-top: 0.1rem; flex-shrink: 0; font-weight: 700; }
+    .issue-solution { font-size: 0.85rem; color: var(--muted); line-height: 1.65; padding-left: 1rem; border-left: 2px solid var(--border); }
+
+    /* FAQ */
+    .faq { display: flex; flex-direction: column; gap: 1px; background: var(--border); }
+    .faq-item { background: var(--surface); padding: 1.5rem 2rem; cursor: pointer; }
+    .faq-item:hover { background: var(--surface2); }
+    .faq-q { font-size: 0.9rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+    .faq-q span { font-family: var(--mono); font-size: 0.75rem; color: var(--accent); }
+    .faq-a { font-size: 0.85rem; color: var(--muted); line-height: 1.65; margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid var(--border); display: none; }
+    .faq-item.open .faq-a { display: block; }
+    .faq-item.open .faq-q span { transform: rotate(45deg); display: inline-block; }
+
+    /* CONTACT */
+    .contact-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); }
+    .contact-card { background: var(--surface); padding: 2.5rem 2rem; text-align: center; transition: background 0.2s; }
+    .contact-card:hover { background: var(--surface2); }
+    .contact-emoji { font-size: 2rem; margin-bottom: 1rem; }
+    .contact-card h3 { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.4rem; }
+    .contact-detail { font-family: var(--mono); font-size: 0.8rem; color: var(--accent); margin-bottom: 0.4rem; }
+    .contact-hours { font-size: 0.75rem; color: var(--muted); }
+
+    /* FOOTER */
+    footer { border-top: 1px solid var(--border); padding: 2rem 3rem; display: flex; justify-content: space-between; align-items: center; }
+    .footer-logo { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); letter-spacing: 0.2em; }
+    .footer-note { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); letter-spacing: 0.1em; }
+
+    /* ANIMATIONS */
+    @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+    .hero-label { animation: fadeUp 0.5s ease both; }
+    .hero h1 { animation: fadeUp 0.5s 0.1s ease both; }
+    .hero p { animation: fadeUp 0.5s 0.2s ease both; }
+    .hero-actions { animation: fadeUp 0.5s 0.3s ease both; }
+    .hero-visual { animation: fadeUp 0.5s 0.4s ease both; }
+
+    .glow-accent { position: absolute; width: 500px; height: 500px; background: radial-gradient(circle,rgba(0,212,255,0.06) 0%,transparent 70%); pointer-events: none; top: -100px; right: -100px; z-index: -1; }
+
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      nav ul { display: none; }
+      .hero { padding: 4rem 1.5rem 3rem; }
+      .hero-grid { grid-template-columns: 1fr; }
+      .hero-visual { display: none; }
+      .stats-bar { grid-template-columns: repeat(2,1fr); }
+      section { padding: 3rem 1.5rem; }
+      .cards { grid-template-columns: 1fr; }
+      .shipping-grid { grid-template-columns: 1fr; }
+      .issue { grid-template-columns: 1fr; }
+      .contact-grid { grid-template-columns: 1fr; }
+      footer { flex-direction: column; gap: 1rem; text-align: center; }
+      .form-row { grid-template-columns: 1fr; }
+      .auth-modal { width: calc(100vw - 2rem); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="logo">ACME<span>.</span>ELECTRONICS</div>
+  <ul>
+    <li><a href="#shipping">Shipping</a></li>
+    <li><a href="#returns">Returns</a></li>
+    <li><a href="#issues">Support</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <div class="nav-right">
+    <!-- Logged-out state -->
+    <div id="nav-guest" style="display:flex;gap:8px;">
+      <button class="nav-auth-btn" onclick="openModal('login-modal')">Log In</button>
+      <button class="nav-auth-btn primary" onclick="openModal('signup-modal')">Sign Up</button>
+    </div>
+    <!-- Logged-in state -->
+    <div id="nav-user" style="display:none;">
+      <div class="user-menu-wrap" id="user-menu-wrap">
+        <div class="user-pill" onclick="toggleUserMenu()">
+          <div class="user-pill-dot"></div>
+          <span id="nav-user-name">User</span>
+          <span class="user-pill-arrow">▼</span>
+        </div>
+        <div class="user-dropdown">
+          <div class="user-dropdown-header">
+            <div class="user-dropdown-name" id="dd-name">—</div>
+            <div class="user-dropdown-email" id="dd-email">—</div>
+          </div>
+          <div class="user-dropdown-item" onclick="openModal('profile-modal')">
+            <span>👤</span> My Profile
+          </div>
+          <div class="user-dropdown-item" onclick="openModal('orders-modal')">
+            <span>📦</span> My Orders
+          </div>
+          <div class="user-dropdown-item danger" onclick="doLogout()">
+            <span>→</span> Sign Out
+          </div>
+        </div>
+      </div>
+    </div>
+    <a href="/cdn-cgi/l/email-protection#691a1c1919061b1d29080a040c0c050c0a1d1b0607000a1a470a0604" class="nav-cta">Get Help</a>
+  </div>
+</nav>
+
+<!-- ── LOGIN MODAL ── -->
+<div class="modal-backdrop" id="login-modal">
+  <div class="auth-modal">
+    <div class="modal-accent-bar"></div>
+    <button class="modal-close" onclick="closeModal('login-modal')">✕</button>
+    <div class="modal-inner">
+      <div class="modal-tag">// Account Access</div>
+      <div class="modal-title">Welcome Back</div>
+      <div class="modal-sub">Sign in to track orders, manage your account, and get personalised support.</div>
+      <div class="modal-alert" id="login-alert"></div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input class="form-input" type="email" id="login-email" placeholder="you@example.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')submitLogin()">
+      </div>
+      <button class="form-submit" id="login-btn" onclick="submitLogin()">Sign In →</button>
+      <div class="modal-switch">
+        Don't have an account? <a onclick="switchModal('login-modal','signup-modal')">Create one</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SIGNUP MODAL ── -->
+<div class="modal-backdrop" id="signup-modal">
+  <div class="auth-modal">
+    <div class="modal-accent-bar"></div>
+    <button class="modal-close" onclick="closeModal('signup-modal')">✕</button>
+    <div class="modal-inner">
+      <div class="modal-tag">// New Account</div>
+      <div class="modal-title">Create Account</div>
+      <div class="modal-sub">Join Acme Electronics to manage orders and get priority support.</div>
+      <div class="modal-alert" id="signup-alert"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">First Name</label>
+          <input class="form-input" type="text" id="signup-firstname" placeholder="Alice">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name</label>
+          <input class="form-input" type="text" id="signup-lastname" placeholder="Smith">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input class="form-input" type="email" id="signup-email" placeholder="you@example.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone <span style="color:var(--muted);font-size:0.6rem;">(optional)</span></label>
+        <input class="form-input" type="tel" id="signup-phone" placeholder="+44 7700 900000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Delivery Address <span style="color:var(--muted);font-size:0.6rem;">(optional)</span></label>
+        <input class="form-input" type="text" id="signup-address" placeholder="12 Park Lane, London">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input class="form-input" type="password" id="signup-password" placeholder="Min. 8 characters">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <input class="form-input" type="password" id="signup-confirm" onkeydown="if(event.key==='Enter')submitSignup()">
+        </div>
+      </div>
+      <button class="form-submit" id="signup-btn" onclick="submitSignup()">Create Account →</button>
+      <div class="modal-switch">
+        Already have an account? <a onclick="switchModal('signup-modal','login-modal')">Sign in</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PROFILE MODAL ── -->
+<div class="modal-backdrop" id="profile-modal">
+  <div class="auth-modal">
+    <div class="modal-accent-bar"></div>
+    <button class="modal-close" onclick="closeModal('profile-modal')">✕</button>
+    <div class="modal-inner">
+      <div class="modal-tag">// Account</div>
+      <div class="modal-title">My Profile</div>
+      <div class="modal-sub">Your account details saved with Acme Electronics.</div>
+      <div id="profile-fields"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ORDERS MODAL ── -->
+<div class="modal-backdrop" id="orders-modal">
+  <div class="auth-modal">
+    <div class="modal-accent-bar"></div>
+    <button class="modal-close" onclick="closeModal('orders-modal')">✕</button>
+    <div class="modal-inner">
+      <div class="modal-tag">// Orders</div>
+      <div class="modal-title">My Orders</div>
+      <div class="modal-sub">Your recent orders placed with Acme Electronics.</div>
+      <div id="orders-list" style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <div class="glow-accent"></div>
+  <div class="hero-grid">
+    <div>
+      <div class="hero-label">// Customer Support Hub</div>
+      <h1>We've got you <em>covered.</em></h1>
+      <p>High-quality electronics and the support to match. Find answers fast, track your orders, or reach our team directly — we're here Mon–Sat.</p>
+      <div class="hero-actions">
+        <a href="#issues" class="btn-primary">Browse Solutions</a>
+        <a href="#contact" class="btn-ghost">Contact Us</a>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="status-card">
+        <div class="status-row"><span class="status-label">SUPPORT STATUS</span><span class="status-val"><span class="dot green"></span>ONLINE</span></div>
+        <div class="status-row"><span class="status-label">PHONE</span><span class="status-val">123-456-7890</span></div>
+        <div class="status-row"><span class="status-label">EMAIL</span><span class="status-val">support@acme...</span></div>
+        <div class="status-row"><span class="status-label">LIVE CHAT</span><span class="status-val"><span class="dot green"></span>AVAILABLE</span></div>
+        <div class="status-row"><span class="status-label">HOURS TODAY</span><span class="status-val">9 AM – 6 PM</span></div>
+        <div class="status-row"><span class="status-label">REFUND SLA</span><span class="status-val">5 BUSINESS DAYS</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat"><span class="stat-num">30</span><div class="stat-label">Day Return Window</div></div>
+  <div class="stat"><span class="stat-num">2–3</span><div class="stat-label">Day Express Shipping</div></div>
+  <div class="stat"><span class="stat-num">£50+</span><div class="stat-label">Free Shipping Threshold</div></div>
+  <div class="stat"><span class="stat-num">5</span><div class="stat-label">Day Refund Processing</div></div>
+</div>
+
+<!-- SHIPPING -->
+<section id="shipping">
+  <div class="section-tag">// 03 — Delivery</div>
+  <h2>Shipping & Delivery</h2>
+  <p class="section-intro">Fast, tracked, and reliable. Free shipping on orders over £50.</p>
+  <div class="shipping-grid">
+    <div class="ship-option featured">
+      <h3>Express Shipping</h3>
+      <div class="ship-days">2–3</div>
+      <div class="ship-note">Business days. Tracked from dispatch to door.</div>
+    </div>
+    <div class="ship-option">
+      <h3>Standard Shipping</h3>
+      <div class="ship-days">5–7</div>
+      <div class="ship-note">Business days. Full tracking provided via email.</div>
+      <div class="free-tag">FREE ON ORDERS OVER £50</div>
+    </div>
+  </div>
+  <p style="font-size:0.82rem;color:var(--muted);margin-top:1.5rem;font-family:var(--mono);">→ Track your order using the link in your shipment confirmation email. &nbsp;|&nbsp; UK only.</p>
+</section>
+
+<!-- RETURNS -->
+<section id="returns" style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);max-width:100%;padding:5rem 0;">
+  <div style="max-width:1100px;margin:0 auto;padding:0 3rem;">
+    <div class="section-tag">// 04 — Returns</div>
+    <h2>Returns & Refunds</h2>
+    <p class="section-intro">Easy returns within 30 days. Defective? We'll exchange it.</p>
+    <div class="cards">
+      <div class="card"><div class="card-accent"></div><div class="card-icon">📦</div><h3>30-Day Window</h3><p>Return any item within 30 days of delivery in original condition and packaging.</p></div>
+      <div class="card"><div class="card-accent"></div><div class="card-icon">💳</div><h3>Fast Refunds</h3><p>Refunds processed within 5 business days back to your original payment method.</p></div>
+      <div class="card"><div class="card-accent"></div><div class="card-icon">🔄</div><h3>Exchanges</h3><p>Received a defective item? We'll exchange it — contact support with your order number.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- COMMON ISSUES -->
+<section id="issues">
+  <div class="section-tag">// 05 — Troubleshooting</div>
+  <h2>Common Issues</h2>
+  <p class="section-intro">Quick solutions for the most frequent problems.</p>
+  <div class="issues">
+    <div class="issue">
+      <div class="issue-problem"><span class="issue-icon">!</span>Product not turning on</div>
+      <div class="issue-solution">Check battery installation or power cable. Contact support if issue persists.</div>
+    </div>
+    <div class="issue">
+      <div class="issue-problem"><span class="issue-icon">!</span>Wrong item delivered</div>
+      <div class="issue-solution">Contact support with your order number. Replacement dispatched within 3–5 business days.</div>
+    </div>
+    <div class="issue">
+      <div class="issue-problem"><span class="issue-icon">!</span>Refund not received</div>
+      <div class="issue-solution">Confirm return tracking. Refunds take up to 5 business days after we receive the item.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);max-width:100%;padding:5rem 0;">
+  <div style="max-width:1100px;margin:0 auto;padding:0 3rem;">
+    <div class="section-tag">// 06 — FAQ</div>
+    <h2>Frequently Asked</h2>
+    <p class="section-intro">Got a quick question? We've probably answered it below.</p>
+    <div class="faq">
+      <div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">How can I track my order? <span>+</span></div><div class="faq-a">Use the tracking link in your shipment confirmation email, sent automatically after dispatch.</div></div>
+      <div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Can I cancel my order? <span>+</span></div><div class="faq-a">Orders can be cancelled within 2 hours of purchase. After this, it will have entered fulfilment.</div></div>
+      <div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Do you offer international shipping? <span>+</span></div><div class="faq-a">Currently, Acme Electronics ships within the UK only.</div></div>
+      <div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">How long does a refund take? <span>+</span></div><div class="faq-a">Refunds are processed within 5 business days of receiving your return. Allow a further 1–3 days for your bank.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="section-tag">// 07 — Contact</div>
+  <h2>Get In Touch</h2>
+  <p class="section-intro">Our team is ready to help Monday through Saturday.</p>
+  <div class="contact-grid">
+    <div class="contact-card"><div class="contact-emoji">📞</div><h3>Phone</h3><div class="contact-detail">123-456-7890</div><div class="contact-hours">Mon–Fri 9AM–6PM · Sat 10AM–4PM</div></div>
+    <div class="contact-card"><div class="contact-emoji">✉️</div><h3>Email</h3><div class="contact-detail"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="384b4d4848574a4c78595b555d5d545d5b4c4a5756515b4b165b5755">[email&#160;protected]</a></div><div class="contact-hours">We aim to respond within 24 hours</div></div>
+    <div class="contact-card"><div class="contact-emoji">💬</div><h3>Live Chat</h3><div class="contact-detail">Available on the website</div><div class="contact-hours">Mon–Fri 9AM–6PM</div></div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">ACME ELECTRONICS © 2025</div>
+  <div class="footer-note">HIGH-QUALITY ELECTRONICS · EXCELLENT SUPPORT</div>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="widget.js" data-site-id="site123" data-api-url="http://127.0.0.1:5000"
+  id="acme-widget"></script>
+
+<script>
+  const API = 'http://127.0.0.1:5000';
+  let currentUser = null;
+
+  // ── Modal helpers ──
+  function openModal(id) {
+    document.getElementById(id).classList.add('open');
+    document.body.style.overflow = 'hidden';
+    if (id === 'profile-modal') renderProfile();
+    if (id === 'orders-modal') loadOrders();
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function switchModal(from, to) { closeModal(from); openModal(to); }
+
+  // Close on backdrop click
+  document.querySelectorAll('.modal-backdrop').forEach(el => {
+    el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); });
+  });
+  // Close on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop.open').forEach(m => closeModal(m.id));
+  });
+
+  function showAlert(modalPrefix, type, msg) {
+    const el = document.getElementById(modalPrefix + '-alert');
+    el.className = 'modal-alert ' + type + ' show';
+    el.textContent = msg;
+  }
+  function clearAlert(modalPrefix) {
+    const el = document.getElementById(modalPrefix + '-alert');
+    el.className = 'modal-alert';
+    el.textContent = '';
+  }
+
+  // ── User menu ──
+  function toggleUserMenu() {
+    document.getElementById('user-menu-wrap').classList.toggle('open');
+  }
+  document.addEventListener('click', e => {
+    const wrap = document.getElementById('user-menu-wrap');
+    if (wrap && !wrap.contains(e.target)) wrap.classList.remove('open');
+  });
+
+  // ── Auth state ──
+  function setUser(user, token) {
+    currentUser = user;
+    if (token) localStorage.setItem('acme_token', token);
+    localStorage.setItem('acme_user', JSON.stringify(user));
+    document.getElementById('nav-guest').style.display = 'none';
+    document.getElementById('nav-user').style.display = 'block';
+    document.getElementById('nav-user-name').textContent = user.name.split(' ')[0];
+    document.getElementById('dd-name').textContent = user.name;
+    document.getElementById('dd-email').textContent = user.email;
+    // Pass full user info (including address) to chatbot widget
+    if (window.acmeWidget) {
+      window.acmeWidget.setUser(user);
+    }
+    // Refresh from server to get latest address if token available
+    const t = token || localStorage.getItem('acme_token');
+    if (t) {
+      fetch(`${API}/auth/me`, { headers: {'Authorization': 'Bearer ' + t} })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d && d.user && window.acmeWidget) window.acmeWidget.setUser(d.user); })
+        .catch(() => {});
+    }
+  }
+
+  function clearUser() {
+    currentUser = null;
+    localStorage.removeItem('acme_token');
+    localStorage.removeItem('acme_user');
+    document.getElementById('nav-guest').style.display = 'flex';
+    document.getElementById('nav-user').style.display = 'none';
+  }
+
+  // ── Login ──
+  async function submitLogin() {
+    clearAlert('login');
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!email || !password) { showAlert('login','error','Please fill in all fields.'); return; }
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true; btn.textContent = 'Signing in...';
+    try {
+      const res = await fetch(`${API}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { showAlert('login','error', data.error || 'Login failed.'); return; }
+      setUser(data.user, data.token);
+      closeModal('login-modal');
+      document.getElementById('login-email').value = '';
+      document.getElementById('login-password').value = '';
+    } catch { showAlert('login','error','Could not reach server.'); }
+    finally { btn.disabled = false; btn.textContent = 'Sign In →'; }
+  }
+
+  // ── Signup ──
+  async function submitSignup() {
+    clearAlert('signup');
+    const firstName = document.getElementById('signup-firstname').value.trim();
+    const lastName  = document.getElementById('signup-lastname').value.trim();
+    const email     = document.getElementById('signup-email').value.trim();
+    const phone     = document.getElementById('signup-phone').value.trim();
+    const address   = document.getElementById('signup-address').value.trim();
+    const password  = document.getElementById('signup-password').value;
+    const confirm   = document.getElementById('signup-confirm').value;
+    if (!firstName || !lastName || !email || !password) { showAlert('signup','error','Please fill in all required fields.'); return; }
+    if (password.length < 8) { showAlert('signup','error','Password must be at least 8 characters.'); return; }
+    if (password !== confirm) { showAlert('signup','error','Passwords do not match.'); return; }
+    const btn = document.getElementById('signup-btn');
+    btn.disabled = true; btn.textContent = 'Creating account...';
+    try {
+      const res = await fetch(`${API}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: firstName + ' ' + lastName, email, phone, address, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { showAlert('signup','error', data.error || 'Registration failed.'); return; }
+      setUser(data.user, data.token);
+      closeModal('signup-modal');
+    } catch { showAlert('signup','error','Could not reach server.'); }
+    finally { btn.disabled = false; btn.textContent = 'Create Account →'; }
+  }
+
+  // ── Logout ──
+  async function doLogout() {
+    const token = localStorage.getItem('acme_token');
+    if (token) {
+      await fetch(`${API}/auth/logout`, { method:'POST', headers:{'Authorization':'Bearer '+token} }).catch(()=>{});
+    }
+    clearUser();
+    if (window.acmeWidget) window.acmeWidget.clearUser();
+    document.getElementById('user-menu-wrap').classList.remove('open');
+  }
+
+  // ── Profile ──
+  function renderProfile() {
+    if (!currentUser) return;
+    const u = currentUser;
+    const fields = [
+      ['Name', u.name],
+      ['Email', u.email],
+      ['Phone', u.phone || '—'],
+      ['Address', u.address || '—'],
+      ['Member since', u.created_at ? u.created_at.split('T')[0] : '—']
+    ];
+    document.getElementById('profile-fields').innerHTML = fields.map(([k,v]) => `
+      <div class="profile-field">
+        <span class="profile-key">${k}</span>
+        <span class="profile-val">${v}</span>
+      </div>`).join('');
+  }
+
+  // ── Orders ──
+  async function loadOrders() {
+    const token = localStorage.getItem('acme_token');
+    if (!token) return;
+    document.getElementById('orders-list').textContent = 'Loading...';
+    try {
+      const res = await fetch(`${API}/auth/orders`, { headers:{'Authorization':'Bearer '+token} });
+      const data = await res.json();
+      const orders = data.orders || [];
+      if (!orders.length) {
+        document.getElementById('orders-list').innerHTML = '<p style="color:var(--muted);font-size:0.82rem;">No orders yet.</p>';
+        return;
+      }
+      document.getElementById('orders-list').innerHTML = orders.map(o => `
+        <div style="padding:12px 0;border-bottom:1px solid var(--border);">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="color:var(--text);font-size:0.8rem;font-weight:600;">${o.product_name}</span>
+            <span style="color:var(--accent);">£${parseFloat(o.total_price).toFixed(2)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="color:var(--muted);font-size:0.68rem;">Qty: ${o.quantity} · ${o.status.toUpperCase()}</span>
+            <span style="color:var(--muted);font-size:0.68rem;">${o.created_at ? o.created_at.split('T')[0] : ''}</span>
+          </div>
+        </div>`).join('');
+    } catch { document.getElementById('orders-list').textContent = 'Could not load orders.'; }
+  }
+
+  // ── Auto-login on page load ──
+  (async function init() {
+    const token = localStorage.getItem('acme_token');
+    if (!token) { clearUser(); return; }
+    try {
+      const res = await fetch(`${API}/auth/me`, { headers:{'Authorization':'Bearer '+token} });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user, null);
+      } else {
+        // Token invalid/expired — clear everything
+        clearUser();
+        if (window.acmeWidget) window.acmeWidget.clearUser();
+      }
+    } catch {
+      // Server offline — do NOT use cached data to avoid false "logged in" state in widget
+      clearUser();
+    }
+  })();
+
+  // ── Listen for login events from the chat widget ──
+  window.addEventListener('acme:login', function(e) {
+    setUser(e.detail.user, e.detail.token);
+  });
+  window.addEventListener('acme:logout', function() {
+    clearUser();
+  });
+</script>
+</body>
+</html>

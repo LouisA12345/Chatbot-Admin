@@ -1,0 +1,14 @@
+[
+  {
+    "type": "sqlite",
+    "path": "D:\\Sunderland Uni\\Computing Project\\Chatbot\\customer.db",
+    "id": "legacy",
+    "label": "Database"
+  },
+  {
+    "type": "sqlite",
+    "label": "Owner",
+    "path": "D:\\Sunderland Uni\\Computing Project\\Chatbot\\owner.db",
+    "id": "89ba8850"
+  }
+]
