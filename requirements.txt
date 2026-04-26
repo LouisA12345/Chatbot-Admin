@@ -1,10 +1,9 @@
 Flask>=3.0.0
 Flask-Cors>=4.0.0
 python-dotenv>=1.0.0
+waitress>=3.0.2
+groq>=0.18.0
 numpy>=1.26.0
-pytest>=8.0.0
-pytest-cov>=5.0.0
-requests>=2.31.0
-rich>=13.7.0
-faiss-cpu
-waitress
+faiss-cpu>=1.8.0
+pypdf>=4.0.0
+sentence-transformers>=3.0.0
