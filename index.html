@@ -610,7 +610,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 // ---------------------------------------------------------------------------
 // Global app state
 // ---------------------------------------------------------------------------
-const API = 'http://127.0.0.1:5000';
+const API = 'https://chatbot-admin-u720.onrender.com';
+const WIDGET_SRC = `${window.location.origin}/widget.js`;
 let adminKey = '', currentSite = null, selectedFile = null, newDbType = 'sqlite';
 let iconType = 'svg';
 let chunkCurrentPage = 1, chunkTotal = 0, chunkQuery = '';
@@ -689,7 +690,7 @@ function selectSite(siteId) {
     .then(r=>r.json()).then(loadCfg);
 
   document.getElementById('embed-code').innerHTML =
-    `&lt;script src="http://localhost:8081/widget.js" data-site-id="${siteId}" data-api-url="http://127.0.0.1:5000"&gt;&lt;/script&gt;<button class="copy-btn" onclick="copyEmbed()">Copy</button>`;
+    `&lt;script src="${WIDGET_SRC}" data-site-id="${siteId}" data-api-url="${API}"&gt;&lt;/script&gt;<button class="copy-btn" onclick="copyEmbed()">Copy</button>`;
   document.getElementById('delete-btn').onclick = () => deleteSite(siteId);
   loadChunkStats();
   loadChunks();
@@ -1297,7 +1298,7 @@ function deduplicateChunks() {
 // ── Embed / toast ──────────────────────────────────────────────
 // Small shared UI utilities for copy feedback and status toasts.
 function copyEmbed() {
-  navigator.clipboard.writeText(`<script src="http://localhost:8081/widget.js" data-site-id="${currentSite}" data-api-url="http://127.0.0.1:5000"><\/script>`)
+  navigator.clipboard.writeText(`<script src="${WIDGET_SRC}" data-site-id="${currentSite}" data-api-url="${API}"><\/script>`)
     .then(()=>showToast('Copied!','success'));
 }
 let toastTimer;

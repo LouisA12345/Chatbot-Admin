@@ -1,7 +1,7 @@
 (function () {
     const scriptTag = document.currentScript;
     const siteId    = scriptTag.getAttribute('data-site-id');
-    const apiBase   = (scriptTag.getAttribute('data-api-url') || 'http://127.0.0.1:5000').replace(/\/$/, '');
+    const apiBase   = (scriptTag.getAttribute('data-api-url') || 'https://chatbot-admin-u720.onrender.com').replace(/\/$/, '');
 
     // Live user info — mutable so login/logout after page load is reflected immediately.
     // Page calls window.acmeWidget.setUser({name,email,address,id}) on login,
